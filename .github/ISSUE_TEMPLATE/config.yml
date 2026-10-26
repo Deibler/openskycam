@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/Deibler/openskycam/discussions
+    about: Ask how to set something up, share a camera that works, or suggest an idea.
+  - name: Documentation
+    url: https://docs.openskycam.org
+    about: Setup, configuration, the API and every part of openskycam.
+  - name: Security vulnerability
+    url: https://github.com/Deibler/openskycam/security/advisories/new
+    about: Report it privately. Please do not open a public issue.

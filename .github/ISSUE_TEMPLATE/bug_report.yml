@@ -1,0 +1,62 @@
+name: Bug report
+description: Something in openskycam does not work as the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never paste API keys, Access tokens, tunnel tokens, camera passwords or footage you do not want public.
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part
+      options:
+        - Setup (npm run setup)
+        - Website
+        - API or MCP server
+        - Ingest Worker
+        - Footage store
+        - Relay
+        - Processor or Workshop runs
+        - Models
+        - Documentation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: Output of npm run setup -- --check
+      description: It checks every part of a deployment and changes nothing.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or errors
+      description: The relevant lines, for example from journalctl, the store log or the browser console.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or the output of git rev-parse --short HEAD
+  - type: textarea
+    id: environment
+    attributes:
+      label: Hardware
+      description: Camera model and codec, relay host, store host and processor host (operating system, GPU).

@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: If you use openskycam in your work, please cite it as below.
+type: software
+title: openskycam
+abstract: >-
+  Records a sky camera around the clock, keeps the footage on your own disk, and finds what flew past with
+  detection workflows, motion tracking and reviewed training data.
+authors:
+  - given-names: Hunter
+    family-names: Deibler
+repository-code: https://github.com/Deibler/openskycam
+url: https://docs.openskycam.org
+license: MIT
+version: 0.1.0
+date-released: 2026-10-25
+keywords:
+  - sky camera
+  - meteor detection
+  - aircraft detection
+  - object tracking
+  - computer vision
+  - YOLO

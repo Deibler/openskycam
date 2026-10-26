@@ -1,6 +1,9 @@
 # Contributing
 
-Thanks for helping. Bug reports, fixes, support for more cameras and hardware, and documentation are all welcome.
+Thanks for helping. Bug reports, fixes, support for more cameras and hardware, and documentation are all welcome. Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
+
+- **Questions and ideas** go in [Discussions](https://github.com/Deibler/openskycam/discussions); **bugs** in an [issue](https://github.com/Deibler/openskycam/issues/new/choose); **security problems** privately, as [SECURITY.md](SECURITY.md) describes.
+- **Pull requests** need a passing `check` and the maintainer's approval before they merge, and they are squash-merged. Nobody pushes to `main` directly. For a large change, open a discussion first so the work fits.
 
 ## Before you change code
 
