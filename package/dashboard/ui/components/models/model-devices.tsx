@@ -217,7 +217,7 @@ export function DeploymentEditor({
             setBusy(true);
             setError('');
             try {
-              await apiRequest(`/api/models/devices/${device.id}/deployment`, 'PUT', {
+              await apiRequest(`/api/models/devices/${encodeURIComponent(device.id)}/deployment`, 'PUT', {
                 previous_revision: device.revision,
                 models: selection,
               });

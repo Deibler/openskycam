@@ -98,3 +98,8 @@ export const problems = {
   path: v => (v.startsWith('/') ? undefined : 'The path starts with /.'),
   address: v => (/^[A-Za-z0-9.:-]+$/.test(v) ? undefined : 'Enter the camera address, such as 192.168.1.20.'),
 };
+
+/** Text from a tool that was given `url`, without the URL or any user:password@ in it. */
+export function redactUrl(text, url) {
+  return text.replaceAll(url, '<camera stream>').replace(/\/\/[^/@\s]*@/g, '//');
+}

@@ -10,7 +10,7 @@ export function ReviewFrame({ item, imageUrl, temporary, selected = false, onSel
     <article data-selected={selected}>
       <button type="button" className="wk-review-image" onClick={onInspect} aria-label={`Inspect frame at ${time}`}>
         <img
-          src={imageUrl ?? `/api/workshop/items/${item.id}/image`}
+          src={imageUrl ?? `/api/workshop/items/${encodeURIComponent(item.id)}/image`}
           alt={`Camera frame at ${item.captured_at}`}
           width={width}
           height={height}
