@@ -13,10 +13,14 @@
     "check:architecture": "node ../shared/check-architecture.mjs worker && node --test ../shared/architecture.check.mjs ../shared/deploy-config.check.mjs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.2.3",
+    "@cloudflare/vitest-plugin": "^1.4.7",
     "@cloudflare/workers-types": "^5.20260922.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11",
-    "wrangler": "^4.136.3"
+    "wrangler": "^4.152.0"
+  },
+  "overrides": {
+    "undici@7": "7.30.1",
+    "zod@4": "4.6.7"
   }
 }

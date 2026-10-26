@@ -17,6 +17,9 @@
     "pagefind": "1.5.2"
   },
   "devDependencies": {
-    "wrangler": "4.136.3"
+    "wrangler": "4.152.0"
+  },
+  "overrides": {
+    "undici@7": "7.30.1"
   }
 }
