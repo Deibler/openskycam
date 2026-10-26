@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-runtime = ["av==16.1.0", "torch==2.10.0", "ultralytics==8.4.58", "numpy==2.4.3", "scipy==1.17.1", "opencv-python==4.13.0.92"]
+runtime = ["av==16.1.0", "torch==2.13.0", "ultralytics==8.4.58", "numpy==2.4.3", "scipy==1.17.1", "opencv-python==4.13.0.92"]
 
 [project.scripts]
 skyvision-processor = "skyvision_processor.__main__:main"
