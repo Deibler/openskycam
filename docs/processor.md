@@ -20,7 +20,8 @@ Runtime dependencies are pinned in `processor/requirements.txt` and in the `runt
 
 ```text
 av==16.1.0
-torch==2.10.0
+torch==2.13.0
+torchvision==0.28.0
 ultralytics==8.4.58
 numpy==2.4.3
 scipy==1.17.1
