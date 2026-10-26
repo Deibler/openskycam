@@ -12,11 +12,11 @@ Bug reports, fixes, support for more cameras and hardware, and documentation are
 
 ## A pull request
 
-- **One change per pull request**, with the tests that prove it.
+- **One change per pull request**, with the tests that prove it. Every pull request needs a passing `check` and the maintainer's approval, and is squash-merged; nobody pushes to `main` directly.
 - **`make check` passes.** CI runs it on every pull request.
 - **Each new test can fail.** Break the code it guards, watch it fail, and restore the code. A test that passes regardless of the code gives false confidence.
 - **Format only the files you change** (`npx biome format --write <files>`), so the diff stays about your change.
-- **Update the docs** that describe what you changed: this site (`package/docs/`), a component's README, or `openapi.json` for API changes. The docs build fails on broken internal links.
+- **Update the docs** that describe what you changed: the pages in `docs/`, a component's README, or `openapi.json` for API changes. The docs build fails on broken internal links.
 
 ## Behaviour that must not change silently
 

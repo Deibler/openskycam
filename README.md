@@ -18,6 +18,7 @@
 
 <p align="center">
   <a href="https://github.com/Deibler/openskycam/actions/workflows/check.yml"><img alt="Check" src="https://github.com/Deibler/openskycam/actions/workflows/check.yml/badge.svg"></a>
+  <a href="https://github.com/Deibler/openskycam/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Deibler/openskycam?color=0B0C0E"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0B0C0E"></a>
 </p>
 
@@ -156,7 +157,7 @@ Packages and cloud resources keep the project's first name, SkyVision (`skyvisio
 
 ## Contributing
 
-Bug reports, fixes and support for more cameras and hardware are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture guide](https://docs.openskycam.org/develop/architecture/), and run `make check` before opening a pull request. Report security issues privately as described in [SECURITY.md](SECURITY.md).
+Bug reports, fixes and support for more cameras and hardware are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture guide](https://docs.openskycam.org/develop/architecture/), and run `make check` before opening a pull request; every pull request needs the maintainer's review. Ask questions in [Discussions](https://github.com/Deibler/openskycam/discussions) ([SUPPORT.md](SUPPORT.md)), report security issues privately as described in [SECURITY.md](SECURITY.md), and follow the [code of conduct](CODE_OF_CONDUCT.md). [CHANGELOG.md](CHANGELOG.md) lists what each release changed.
 
 ## License
 
