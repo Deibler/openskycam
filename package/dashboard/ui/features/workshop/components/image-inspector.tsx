@@ -40,7 +40,7 @@ export function ImageInspector({ item, imageUrl, onClose }: ImageInspectorProps)
             role="img"
             aria-label={focused && selected ? `Magnified ${selected.class_name} prediction` : 'Full camera frame'}
           >
-            <image href={imageUrl ?? `/api/workshop/items/${item.id}/image`} width={width} height={height} />
+            <image href={imageUrl ?? `/api/workshop/items/${encodeURIComponent(item.id)}/image`} width={width} height={height} />
             {outlines &&
               annotations.map(
                 (a, index) =>

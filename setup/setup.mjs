@@ -65,26 +65,38 @@ process.on('SIGINT', () => {
 });
 
 /**
- * Asks until the answer passes `problem`. Enter keeps the current value. Secrets are not echoed. With --yes,
- * the current value is the answer, and `key` names where to put one when there is none.
+ * Asks until the answer passes `problem`. Enter keeps the current value. With --yes, the current value is the
+ * answer, and `key` names where to put one when there is none. Secrets go through askSecret instead.
  */
-async function ask(label, { initial = '', secret = false, problem, key } = {}) {
+async function ask(label, { initial = '', problem, key } = {}) {
   if (assumeYes) {
     const issue = initial ? problem?.(initial) : `none is set; put it in ${key}`;
     if (issue) throw new Error(`${label}: ${issue}.`);
-    say(`${label}: ${secret ? dim('(from ' + key + ')') : initial}`);
+    say(`${label}: ${initial}`);
     return initial;
   }
   for (;;) {
-    const current = initial ? dim(secret ? ' [Enter keeps the saved one]' : ` [${initial}]`) : '';
-    process.stdout.write(`  ${label}${current}: `);
-    if (secret) echo(false);
-    const answer = (await nextLine().finally(() => secret && echo(true))).trim();
-    if (secret && process.stdin.isTTY) process.stdout.write('\n');
-    const value = answer || initial;
+    process.stdout.write(`  ${label}${initial ? dim(` [${initial}]`) : ''}: `);
+    const value = (await nextLine()).trim() || initial;
     const issue = value ? problem?.(value) : 'An answer is needed.';
     if (!issue) return value;
     console.log(`  ${red(issue)}`);
+  }
+}
+/** Like ask, for a secret: typing is hidden, and the value never reaches the output, even with --yes. */
+async function askSecret(label, { initial = '', key } = {}) {
+  if (assumeYes) {
+    if (!initial) throw new Error(`${label}: none is set; put it in ${key}.`);
+    say(`${label}: ${dim(`from ${key}`)}`);
+    return initial;
+  }
+  for (;;) {
+    process.stdout.write(`  ${label}${initial ? dim(' [Enter keeps the saved one]') : ''}: `);
+    echo(false);
+    const answer = (await nextLine().finally(() => echo(true))).trim();
+    if (process.stdin.isTTY) process.stdout.write('\n');
+    if (answer || initial) return answer || initial;
+    console.log(`  ${red('An answer is needed.')}`);
   }
 }
 async function confirm(label, yes = true) {
@@ -341,7 +353,7 @@ const steps = [
         say('It needs no public hostname. On the install page, copy the command: the long token after --token is what you need.');
         openUrl('https://one.dash.cloudflare.com/');
         for (;;) {
-          const token = await ask('Tunnel token', { secret: true, initial: process.env.STORE_TUNNEL_TOKEN, key: 'the environment variable STORE_TUNNEL_TOKEN' });
+          const token = await askSecret('Tunnel token', { initial: process.env.STORE_TUNNEL_TOKEN, key: 'the environment variable STORE_TUNNEL_TOKEN' });
           try {
             tunnelId = lib.parseTunnelToken(token).tunnelId;
             const wrote = ssh(host, 'mkdir -p ~/.config/skyvision-store && umask 077 && cat > ~/.config/skyvision-store/tunnel.token', token.trim());
@@ -479,7 +491,7 @@ const steps = [
         say('The camera must stream H.264 or H.265 over RTSP (see docs/requirements.md).');
         const ip = await ask('Camera address', { initial: env.CAMERA_IP_ADDRESS, problem: lib.problems.address, key: 'CAMERA_IP_ADDRESS' });
         const user = await ask('Camera user name', { initial: env.CAMERA_USERNAME || 'admin', key: 'CAMERA_USERNAME' });
-        const password = await ask('Camera password', { initial: env.CAMERA_PASSWORD, secret: true, key: 'CAMERA_PASSWORD' });
+        const password = await askSecret('Camera password', { initial: env.CAMERA_PASSWORD, key: 'CAMERA_PASSWORD' });
         const port = await ask('RTSP port', { initial: env.CAMERA_RTSP_PORT || '554', problem: lib.problems.port, key: 'CAMERA_RTSP_PORT' });
         say(dim('Stream paths: Dahua /cam/realmonitor?channel=1&subtype=0 · Hikvision /Streaming/Channels/101 · Tapo /stream1'));
         const streamPath = await ask('RTSP path', { initial: env.CAMERA_RTSP_PATH || '/cam/realmonitor?channel=1&subtype=0', problem: lib.problems.path, key: 'CAMERA_RTSP_PATH' });
@@ -492,7 +504,7 @@ const steps = [
           say(green(`The camera streams ${codec === 'hevc' ? 'H.265' : 'H.264'} at ${width}×${height}.`));
           break;
         }
-        tryAgain(probe.ok ? `The camera streams ${codec}; the relay records H.264 or H.265 only.` : `The relay cannot read the stream: ${probe.all.trim().split('\n').pop()}`);
+        tryAgain(probe.ok ? `The camera streams ${codec}; the relay records H.264 or H.265 only.` : `The relay cannot read the stream: ${lib.redactUrl(probe.all.trim().split('\n').pop(), url)}`);
       }
       say('Installing the recorder and uploader…');
       if (!run(path.join(root, 'external/relay/deploy.sh'), [host]).ok) throw new Error('The relay install failed; see the output above.');
@@ -526,7 +538,7 @@ const steps = [
         say('Setup uses it to register the processor; it is saved in .env for your own scripts too.');
         openUrl(site);
         if (assumeYes) throw new Error('OPENSKYCAM_AGENT_KEY is missing or refused: create an Agent key for every camera on the website and put it in .env.');
-        save({ OPENSKYCAM_AGENT_KEY: await ask('Agent key', { secret: true }) });
+        save({ OPENSKYCAM_AGENT_KEY: await askSecret('Agent key') });
       }
       const host = await sshHost('SSH host of the processor machine', 'PROCESSOR_HOST');
       const python = ssh(host, 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; command -v python3 && python3 -c "import sys; sys.exit(sys.version_info < (3, 11))"');
@@ -540,7 +552,7 @@ const steps = [
         say('');
         say(`Create a second key: Purpose ${bold('Run Workshop jobs')}, device ${bold(device)}, every camera.`);
         openUrl(site);
-        const key = await ask('Run Workshop jobs key', { secret: true, initial: process.env.OPENSKYCAM_WORKSHOP_KEY, key: 'the environment variable OPENSKYCAM_WORKSHOP_KEY' });
+        const key = await askSecret('Run Workshop jobs key', { initial: process.env.OPENSKYCAM_WORKSHOP_KEY, key: 'the environment variable OPENSKYCAM_WORKSHOP_KEY' });
         const me = json((await api('/v1/me', key)).text);
         if (me?.scope === 'workshop:run') {
           ssh(host, 'mkdir -p ~/.config/openskycam && umask 077 && cat > ~/.config/openskycam/workshop.key', key);

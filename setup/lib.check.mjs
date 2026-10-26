@@ -63,3 +63,9 @@ test('team domains are normalized, and bad input is reported', () => {
   assert.ok(lib.problems.camera('Sky 01'));
   assert.ok(lib.problems.folder('footage'));
 });
+
+test('camera stream URLs and their passwords are removed from error text', () => {
+  const url = 'rtsp://admin:s3cret%40x@192.168.1.20:554/stream1';
+  assert.equal(lib.redactUrl(`${url}: Connection refused`, url), '<camera stream>: Connection refused');
+  assert.equal(lib.redactUrl('rtsp://admin:other@10.1.1.1/x: 401 Unauthorized', url), 'rtsp://10.1.1.1/x: 401 Unauthorized');
+});

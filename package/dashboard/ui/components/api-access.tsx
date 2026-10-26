@@ -376,7 +376,7 @@ function KeyAction({
               ...(['models:sync', 'workshop:run'].includes(scope) ? { device_id: device } : {}),
             })
           : await apiRequest<{ key: ApiKeyInfo; token?: string }>(
-              `/api/keys/${action.key.id}${action.type === 'rotate' ? '/rotate' : ''}`,
+              `/api/keys/${encodeURIComponent(action.key.id)}${action.type === 'rotate' ? '/rotate' : ''}`,
               action.type === 'rename' ? 'PATCH' : action.type === 'revoke' ? 'DELETE' : 'POST',
               action.type === 'rename' ? { name } : undefined,
             );

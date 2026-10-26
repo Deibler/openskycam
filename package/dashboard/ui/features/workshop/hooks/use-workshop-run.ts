@@ -28,7 +28,7 @@ export function useWorkshopRun(id: string) {
       let delay = 4000;
       try {
         const result = await apiRequest<WorkshopRunDetail>(
-          `/api/workshop/runs/${id}`,
+          `/api/workshop/runs/${encodeURIComponent(id)}`,
           'GET',
           undefined,
           controller.signal,
@@ -92,7 +92,7 @@ export function useWorkshopRun(id: string) {
   }, [id, revision]);
   async function cancel() {
     try {
-      await apiRequest(`/api/workshop/runs/${id}/cancel`, 'POST', {});
+      await apiRequest(`/api/workshop/runs/${encodeURIComponent(id)}/cancel`, 'POST', {});
       refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not cancel.');

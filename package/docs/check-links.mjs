@@ -12,9 +12,10 @@ const ids = new Map(
 );
 const broken = [];
 for (const file of pages) {
-  const html = fs.readFileSync(file, 'utf8').replace(/<script[\s\S]*?<\/script>/g, '');
+  const html = fs.readFileSync(file, 'utf8');
   for (const [, link] of html.matchAll(/<a [^>]*href="([^"]+)"/g)) {
-    if (/^(https?:|mailto:)/.test(link)) continue;
+    // Script templates such as the search results' href="${r.url}" are filled in later, not links.
+    if (/^(https?:|mailto:)/.test(link) || link.includes('${')) continue;
     const [target, anchor] = link.split('#');
     const resolved = target
       ? path.join(site, target.startsWith('/') ? target : path.relative(site, path.join(path.dirname(file), target)))
