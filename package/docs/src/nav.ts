@@ -15,6 +15,7 @@ export const tabs: { label: string; icon: string; sections: { title: string; ico
           'how-it-works': 'Route',
           requirements: 'ListChecks',
           deploy: 'CloudUpload',
+          agents: 'Sparkles',
           configuration: 'SlidersHorizontal',
         },
       },

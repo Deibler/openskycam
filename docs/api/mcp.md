@@ -3,7 +3,7 @@ title: MCP server
 description: Connect an AI agent to openskycam through its remote Model Context Protocol server.
 ---
 
-`https://<api-host>/v1/mcp` is a remote [Model Context Protocol](https://modelcontextprotocol.io) server. An agent connected to it can browse footage, take photos from stored video, build and run workflows, review detections, freeze datasets and deploy models: everything the website does except managing API keys. It needs an **Agent** key.
+`https://<api-host>/v1/mcp` is a remote [Model Context Protocol](https://modelcontextprotocol.io) server. An agent connected to it can browse footage, take photos from stored video, build and run workflows, review detections, freeze datasets and deploy models: everything the website does except managing API keys. It needs an **Agent** key. [Run it with an agent](../agents.md) shows what to ask and which tools answer.
 
 ## Connect
 

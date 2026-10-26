@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://docs.openskycam.org/">Documentation</a> ·
   <a href="https://docs.openskycam.org/deploy/">Deploy your own</a> ·
+  <a href="https://docs.openskycam.org/agents/">Run it with an agent</a> ·
   <a href="https://docs.openskycam.org/api/">API</a>
 </p>
 
@@ -30,7 +31,7 @@ openskycam records an IP camera pointed at the sky, 24 hours a day. A relay copi
 - **Find things in it.** Build a workflow that samples frames from a time window, runs detection models, and routes each frame to a bucket by class, score, count, time or motion. Run it once, or every night as footage arrives.
 - **Tell planes from stars.** Boxes from the same object are linked across a recording into a track that is moving, stationary or brief. A workflow can keep moving aircraft and set fixed lights aside.
 - **Build training data.** Review detections, correct boxes, and freeze a dataset version with its images, labels, tracks and splits.
-- **Script everything.** Everything the website does is also a `/v1` API call. An MCP server gives AI agents the same tools.
+- **Hand it to your agent.** An AI agent can set it up, run it and change its code: every website action is a `/v1` API call, an MCP server gives agents seven tools that cover the website, and the setup runs unattended from `.env`.
 
 ## A look inside
 
@@ -90,6 +91,33 @@ npm install
 make check               # every test suite, the docs build and shell lint; needs no Cloudflare account
 ```
 
+## Run it with your agent
+
+openskycam is built for an AI agent to operate:
+
+- **It covers the whole website.** Connected to the MCP server at `/v1/mcp`, an agent can browse and download footage, take a photo from stored video at any second, build and test workflows, schedule them, follow runs live, review detections, freeze datasets, check the processor and assign models to devices.
+- **The server teaches it.** On connect, the agent gets instructions plus six guides and five step-by-step skills (`build-a-workflow`, `find-detections`, `take-photos`, `download-footage`, `verify-changes`).
+- **It runs the setup.** `npm run setup -- --yes` asks nothing: it reads every answer from `.env`, stops naming the key it needs, and skips finished steps when run again. `npm run setup -- --check` checks all nine steps of a running deployment and exits with 1 when one fails.
+- **It can change the code safely.** [`AGENTS.md`](AGENTS.md) gives the conventions, and `make check` runs every test and the architecture checks without a Cloudflare account.
+- **The server enforces the guardrails.**
+  - No key can create keys.
+  - Deletes show a preview and need a confirmation.
+  - Edits fail rather than overwrite a newer revision.
+  - Every tool call is logged.
+
+You ask in plain words: *"Did the camera record all night?"*, *"Find last night's meteors and show me the clearest three"*, *"Build a workflow that keeps moving planes between 02:00 and 09:30 UTC and run it every night"*, *"Review the waiting images in Planes"*. Three steps need a person:
+- the first Cloudflare login;
+- creating the tunnel and the sign-in application in the Cloudflare dashboard;
+- creating API keys on the website.
+
+[Run it with an agent](https://docs.openskycam.org/agents/) maps each request to the tool that answers it.
+
+Create an **Agent** key under **API access** on your website, then connect, for example with Claude Code:
+
+```sh
+claude mcp add --transport http openskycam https://<api-host>/v1/mcp --header "Authorization: Bearer $OPENSKYCAM_KEY"
+```
+
 ## Use the API
 
 Create a key on the website under **API access**. An Agent key that covers every camera can call everything the website does:
@@ -99,11 +127,7 @@ curl -H "Authorization: Bearer $OPENSKYCAM_KEY" https://<api-host>/v1/workshop
 curl -H "Authorization: Bearer $OPENSKYCAM_KEY" "https://<api-host>/v1/recordings?camera=sky01&from=2026-10-25T02:00:00Z&to=2026-10-25T03:00:00Z"
 ```
 
-`/openapi.json` describes the API for client generation. AI agents connect to the [MCP server](https://docs.openskycam.org/api/mcp/) at `/v1/mcp`:
-
-```sh
-claude mcp add --transport http openskycam https://<api-host>/v1/mcp --header "Authorization: Bearer $OPENSKYCAM_KEY"
-```
+`/openapi.json` describes the API for client generation.
 
 ## Models
 

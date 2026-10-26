@@ -66,6 +66,8 @@ Variables already set in the environment win over `.env`. In Workers Builds, set
 | `PROCESSOR_DEVICE` | The processor's registered device name |
 | `OPENSKYCAM_AGENT_KEY` | An Agent key for every camera. The setup registers the processor with it; your scripts can use it too |
 
+With `npm run setup -- --yes`, two secrets come from the environment instead of `.env`: `STORE_TUNNEL_TOKEN`, written only to the store host, and `OPENSKYCAM_WORKSHOP_KEY`, written only to the processor host.
+
 ## How `npm run config` fills `wrangler.jsonc`
 
 The `wrangler.jsonc` files leave every deployment value out. [`package/shared/deploy-config.mjs`](https://github.com/Deibler/openskycam/blob/main/package/shared/deploy-config.mjs) fills them in. Every Wrangler script in `package/dashboard/` and `package/worker/` runs it first, and it writes the result to `wrangler.deploy.json`:

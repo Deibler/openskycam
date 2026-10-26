@@ -25,7 +25,7 @@ website + API Worker ◀── Cloudflare Access (people), API keys (scripts, ag
 - **Find things in it.** A Workshop workflow samples frames from a time window, runs one to four detection or classification models, and routes each frame to a bucket by class, score, count, time of day, or motion. Workflows can run on a schedule, for example every night.
 - **Tell planes from stars.** Boxes from the same object are linked across a recording into a track. Each track is moving, stationary, or brief, so a workflow can keep moving planes and set fixed lights aside.
 - **Build training data.** Review detections, accept or reject them, correct their boxes, and freeze a dataset version. A version records its images, labels, tracks, classes, and splits, and a script can download it.
-- **Script all of it.** Everything the website does is also an API call under `/v1`. AI agents can connect to the MCP server, which offers the same actions.
+- **Hand it to an agent.** Everything the website does is also an API call under `/v1`, and an MCP server gives AI agents the same actions with guides on how to use them. An agent can run the setup, operate it day to day and change its code ([Run it with an agent](agents.md)).
 
 ## What it is made of
 
@@ -48,6 +48,8 @@ The store and the processor can be the same machine. Nothing in Cloudflare holds
   Cameras, hosts, disk sizing, and the Cloudflare account.
 - [Deploy your own](deploy.md)\
   Every step from a clone to video arriving.
+- [Run it with an agent](agents.md)\
+  What an AI agent can do over MCP, and how it runs the setup for you.
 - [Configuration](configuration.md)\
   Every setting and its default.
 - [Workflows](workshop/workflows.md)\

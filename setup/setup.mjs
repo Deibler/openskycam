@@ -7,6 +7,9 @@
  *   npm run setup -- relay      run one step again (cloudflare, hosts, storage, store, access, website,
  *                               ingest, relay, processor)
  *   npm run setup -- --check    check every step and change nothing
+ *   npm run setup -- --yes      ask nothing: take every answer from .env (secrets that never go in .env
+ *                               from the environment) and stop, naming the key, when one is missing.
+ *                               For agents and scripts.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -21,6 +24,7 @@ const envFile = path.join(root, '.env');
 const wranglerBin = path.join(root, 'package/dashboard/node_modules/.bin/wrangler');
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
+const assumeYes = args.includes('--yes');
 const only = args.find(a => !a.startsWith('--'));
 let env = fs.existsSync(envFile) ? lib.parseEnv(fs.readFileSync(envFile, 'utf8')) : {};
 
@@ -60,8 +64,17 @@ process.on('SIGINT', () => {
   process.exit(130);
 });
 
-/** Asks until the answer passes `problem`. Enter keeps the current value. Secrets are not echoed. */
-async function ask(label, { initial = '', secret = false, problem } = {}) {
+/**
+ * Asks until the answer passes `problem`. Enter keeps the current value. Secrets are not echoed. With --yes,
+ * the current value is the answer, and `key` names where to put one when there is none.
+ */
+async function ask(label, { initial = '', secret = false, problem, key } = {}) {
+  if (assumeYes) {
+    const issue = initial ? problem?.(initial) : `none is set; put it in ${key}`;
+    if (issue) throw new Error(`${label}: ${issue}.`);
+    say(`${label}: ${secret ? dim('(from ' + key + ')') : initial}`);
+    return initial;
+  }
   for (;;) {
     const current = initial ? dim(secret ? ' [Enter keeps the saved one]' : ` [${initial}]`) : '';
     process.stdout.write(`  ${label}${current}: `);
@@ -75,11 +88,16 @@ async function ask(label, { initial = '', secret = false, problem } = {}) {
   }
 }
 async function confirm(label, yes = true) {
+  if (assumeYes) {
+    say(`${label} ${dim(yes ? 'yes' : 'no')}`);
+    return yes;
+  }
   process.stdout.write(`  ${label} ${dim(yes ? '[Y/n]' : '[y/N]')} `);
   const answer = (await nextLine()).trim().toLowerCase();
   return answer ? answer.startsWith('y') : yes;
 }
 async function pause(text = 'Press Enter when that is done.') {
+  if (assumeYes) throw new Error(`This step needs a person: ${text}`);
   process.stdout.write(`  ${dim(text)} `);
   await nextLine();
 }
@@ -165,16 +183,21 @@ function save(values) {
   fs.writeFileSync(envFile, lib.setEnv(text, values), { mode: 0o600 });
 }
 
+/** Shows a problem and lets the person try again; with --yes there is nobody to ask, so it stops. */
+function tryAgain(message) {
+  if (assumeYes) throw new Error(message);
+  say(red(message));
+}
+
 /** Asks for an SSH host until key-based login works. */
 async function sshHost(label, key) {
   for (;;) {
-    const host = await ask(label, { initial: env[key], problem: lib.problems.ssh });
+    const host = await ask(label, { initial: env[key], problem: lib.problems.ssh, key });
     if (ssh(host, 'true').ok) {
       save({ [key]: host });
       return host;
     }
-    say(red(`Cannot log in to ${host} with an SSH key.`));
-    say(`Set up key login first, for example: ${bold(`ssh-copy-id ${host}`)}, then try again.`);
+    tryAgain(`Cannot log in to ${host} with an SSH key. Set up key login first, for example: ssh-copy-id ${host}`);
   }
 }
 
@@ -184,7 +207,7 @@ async function linger(host) {
   if (ssh(host, 'loginctl show-user "$USER" --property=Linger').out.includes('Linger=yes')) return;
   say(`${host} must keep its services running when nobody is logged in (loginctl enable-linger).`);
   if (await confirm('Turn that on now? It may ask for your password on that host.'))
-    sshTerminal(host, 'sudo loginctl enable-linger "$USER"');
+    sshTerminal(host, `sudo ${assumeYes ? '-n ' : ''}loginctl enable-linger "$USER"`);
 }
 
 const storeToken = () => {
@@ -220,7 +243,7 @@ const steps = [
       if (!who?.loggedIn) throw new Error('Wrangler is still not signed in.');
       if (who.accounts?.length > 1) {
         who.accounts.forEach((a, i) => say(`${i + 1}. ${a.name} (${a.id})`));
-        const pick = await ask('Which account', { problem: v => (who.accounts[+v - 1] ? undefined : 'Enter a number.') });
+        const pick = await ask('Which account', { key: 'CLOUDFLARE_ACCOUNT_ID', problem: v => (who.accounts[+v - 1] ? undefined : 'Enter a number.') });
         save({ CLOUDFLARE_ACCOUNT_ID: who.accounts[+pick - 1].id });
       }
     },
@@ -236,9 +259,9 @@ const steps = [
     },
     async run() {
       say('The website and API are two hostnames on a domain in your Cloudflare account.');
-      const site = await ask('Website hostname, for example sky.example.com', { initial: env.SITE_HOST, problem: lib.problems.host });
-      const apiHost = await ask('API hostname', { initial: env.API_HOST || `api.${site}`, problem: lib.problems.host });
-      const cam = await ask('A short ID for the camera', { initial: env.CAM_ID || 'sky01', problem: lib.problems.camera });
+      const site = await ask('Website hostname, for example sky.example.com', { initial: env.SITE_HOST, problem: lib.problems.host, key: 'SITE_HOST' });
+      const apiHost = await ask('API hostname', { initial: env.API_HOST || `api.${site}`, problem: lib.problems.host, key: 'API_HOST' });
+      const cam = await ask('A short ID for the camera', { initial: env.CAM_ID || 'sky01', problem: lib.problems.camera, key: 'CAM_ID' });
       const cameras = [...new Set([...(env.CAMERAS ?? '').split(',').filter(Boolean), cam])].join(',');
       save({ SITE_HOST: site, API_HOST: apiHost, CAM_ID: cam, CAMERAS: cameras });
     },
@@ -295,18 +318,18 @@ const steps = [
           sshTerminal(host, `PATH=/opt/homebrew/bin:/usr/local/bin:$PATH brew install ${missing.join(' ')}`);
         } else {
           say('Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/');
-          await pause('Press Enter once they are installed.');
+          await pause(`Install ${missing.join(', ')} on ${host}, then press Enter.`);
         }
       }
-      const folder = await ask('Folder for the footage, for example /mnt/footage', { initial: env.STORE_ROOT, problem: lib.problems.folder });
+      const folder = await ask('Folder for the footage, for example /mnt/footage', { initial: env.STORE_ROOT, problem: lib.problems.folder, key: 'STORE_ROOT' });
       ssh(host, `mkdir -p '${folder}'`);
       let systemDisk = env.STORE_SYSTEM_DISK === 'yes';
       if (ssh(host, `python3 -c 'import os,sys; sys.exit(0 if os.path.ismount(sys.argv[1]) else 1)' '${folder}'`).ok) systemDisk = false;
       else {
         say(`${folder} is not a separate disk. The store refuses to write to a folder whose disk is missing,`);
         say('so a drive that fails to mount never fills the system disk.');
-        systemDisk = await confirm('Keep footage in this folder on the system disk anyway?', false);
-        if (!systemDisk) throw new Error(`Mount the footage disk at ${folder}, then run setup again.`);
+        systemDisk = env.STORE_SYSTEM_DISK === 'yes' || (await confirm('Keep footage in this folder on the system disk anyway?', false));
+        if (!systemDisk) throw new Error(`Mount the footage disk at ${folder} (or set STORE_SYSTEM_DISK=yes), then run setup again.`);
       }
       save({ STORE_ROOT: folder, STORE_SYSTEM_DISK: systemDisk ? 'yes' : 'no' });
 
@@ -318,14 +341,14 @@ const steps = [
         say('It needs no public hostname. On the install page, copy the command: the long token after --token is what you need.');
         openUrl('https://one.dash.cloudflare.com/');
         for (;;) {
-          const token = await ask('Tunnel token', { secret: true });
+          const token = await ask('Tunnel token', { secret: true, initial: process.env.STORE_TUNNEL_TOKEN, key: 'the environment variable STORE_TUNNEL_TOKEN' });
           try {
             tunnelId = lib.parseTunnelToken(token).tunnelId;
             const wrote = ssh(host, 'mkdir -p ~/.config/skyvision-store && umask 077 && cat > ~/.config/skyvision-store/tunnel.token', token.trim());
             if (!wrote.ok) throw new Error(wrote.all);
             break;
           } catch (error) {
-            say(red(error.message));
+            tryAgain(error.message);
           }
         }
         save({ STORE_TUNNEL_ID: tunnelId });
@@ -364,21 +387,24 @@ const steps = [
       say('4. Save, then copy the Application Audience (AUD) tag from the application\'s Basic information.');
       openUrl('https://one.dash.cloudflare.com/');
       for (;;) {
-        const team = lib.teamDomain(await ask('Team domain, shown under Settings → Custom pages or in the sign-in URL', { initial: env.ACCESS_TEAM_DOMAIN, problem: lib.problems.team }));
+        const team = lib.teamDomain(await ask('Team domain, shown under Settings → Custom pages or in the sign-in URL', { initial: env.ACCESS_TEAM_DOMAIN, problem: lib.problems.team, key: 'ACCESS_TEAM_DOMAIN' }));
         const certs = await http(`${team}/cdn-cgi/access/certs`);
         if (certs.status === 200 && json(certs.text)?.keys) {
           save({ ACCESS_TEAM_DOMAIN: team });
           break;
         }
-        say(red(`${team} does not answer as an Access team domain.`));
+        tryAgain(`${team} does not answer as an Access team domain.`);
       }
-      save({ ACCESS_AUD: await ask('Application Audience (AUD) tag', { initial: env.ACCESS_AUD, problem: lib.problems.aud }) });
+      save({ ACCESS_AUD: await ask('Application Audience (AUD) tag', { initial: env.ACCESS_AUD, problem: lib.problems.aud, key: 'ACCESS_AUD' }) });
       say('');
       say('Scripts call the API with keys, but Cloudflare\'s Browser Integrity Check blocks many of them first.');
       say(`Turn it off for ${env.API_HOST} only: your domain → Rules → Configuration Rules → Create rule,`);
       say(`when Hostname equals ${env.API_HOST}, set Browser Integrity Check to Off.`);
-      openUrl('https://dash.cloudflare.com/');
-      await pause();
+      if (assumeYes) say(dim('The website step checks that this rule is in place.'));
+      else {
+        openUrl('https://dash.cloudflare.com/');
+        await pause();
+      }
     },
   },
   {
@@ -419,7 +445,7 @@ const steps = [
         say(yellow('The deploy did not print a workers.dev address. Your account may need a workers.dev subdomain:'));
         say('Workers & Pages → Overview → workers.dev subdomain.');
         openUrl('https://dash.cloudflare.com/?to=/:account/workers-and-pages');
-        url = await ask('The ingest Worker address, https://skyvision-ingest.<subdomain>.workers.dev', { initial: env.INGEST_URL, problem: v => (/^https:\/\//.test(v) ? undefined : 'Start with https://.') });
+        url = await ask('The ingest Worker address, https://skyvision-ingest.<subdomain>.workers.dev', { initial: env.INGEST_URL, key: 'INGEST_URL', problem: v => (/^https:\/\//.test(v) ? undefined : 'Start with https://.') });
       }
       save({ INGEST_URL: url });
       putSecret('worker', 'INGEST_TOKEN', env.INGEST_TOKEN);
@@ -445,18 +471,18 @@ const steps = [
       const missing = ssh(host, 'for t in ffmpeg ffprobe curl; do command -v $t >/dev/null || echo $t; done').out.split('\n').filter(Boolean);
       if (missing.length) {
         say(yellow(`${host} is missing: ${missing.join(', ')}.`));
-        if (await confirm('Install ffmpeg and curl with apt now? It asks for your password on that host.')) sshTerminal(host, 'sudo apt-get update && sudo apt-get install -y ffmpeg curl');
+        if (await confirm('Install ffmpeg and curl with apt now? It asks for your password on that host.')) sshTerminal(host, `sudo ${assumeYes ? '-n ' : ''}sh -c 'apt-get update && apt-get install -y ffmpeg curl'`);
       }
       await linger(host);
       for (;;) {
         say('');
         say('The camera must stream H.264 or H.265 over RTSP (see docs/requirements.md).');
-        const ip = await ask('Camera address', { initial: env.CAMERA_IP_ADDRESS, problem: lib.problems.address });
-        const user = await ask('Camera user name', { initial: env.CAMERA_USERNAME || 'admin' });
-        const password = await ask('Camera password', { initial: env.CAMERA_PASSWORD, secret: true });
-        const port = await ask('RTSP port', { initial: env.CAMERA_RTSP_PORT || '554', problem: lib.problems.port });
+        const ip = await ask('Camera address', { initial: env.CAMERA_IP_ADDRESS, problem: lib.problems.address, key: 'CAMERA_IP_ADDRESS' });
+        const user = await ask('Camera user name', { initial: env.CAMERA_USERNAME || 'admin', key: 'CAMERA_USERNAME' });
+        const password = await ask('Camera password', { initial: env.CAMERA_PASSWORD, secret: true, key: 'CAMERA_PASSWORD' });
+        const port = await ask('RTSP port', { initial: env.CAMERA_RTSP_PORT || '554', problem: lib.problems.port, key: 'CAMERA_RTSP_PORT' });
         say(dim('Stream paths: Dahua /cam/realmonitor?channel=1&subtype=0 · Hikvision /Streaming/Channels/101 · Tapo /stream1'));
-        const streamPath = await ask('RTSP path', { initial: env.CAMERA_RTSP_PATH || '/cam/realmonitor?channel=1&subtype=0', problem: lib.problems.path });
+        const streamPath = await ask('RTSP path', { initial: env.CAMERA_RTSP_PATH || '/cam/realmonitor?channel=1&subtype=0', problem: lib.problems.path, key: 'CAMERA_RTSP_PATH' });
         save({ CAMERA_IP_ADDRESS: ip, CAMERA_USERNAME: user, CAMERA_PASSWORD: password, CAMERA_RTSP_PORT: port, CAMERA_RTSP_PATH: streamPath });
         say(`Checking the stream from ${host}…`);
         const url = `rtsp://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${ip}:${port}${streamPath}`;
@@ -466,7 +492,7 @@ const steps = [
           say(green(`The camera streams ${codec === 'hevc' ? 'H.265' : 'H.264'} at ${width}×${height}.`));
           break;
         }
-        say(red(probe.ok ? `The camera streams ${codec}; the relay records H.264 or H.265 only.` : `The relay cannot read the stream: ${probe.all.trim().split('\n').pop()}`));
+        tryAgain(probe.ok ? `The camera streams ${codec}; the relay records H.264 or H.265 only.` : `The relay cannot read the stream: ${probe.all.trim().split('\n').pop()}`);
       }
       say('Installing the recorder and uploader…');
       if (!run(path.join(root, 'external/relay/deploy.sh'), [host]).ok) throw new Error('The relay install failed; see the output above.');
@@ -490,7 +516,8 @@ const steps = [
     async run() {
       say('The processor runs detection models over your footage for Workshop workflows. It needs a');
       say('macOS or Linux machine with Python 3.11 or later; an Apple or NVIDIA GPU makes it much faster.');
-      if (!(await confirm('Set up a processor now?', false))) return 'skipped';
+      // With --yes, a processor is set up when PROCESSOR_HOST says where.
+      if (!(assumeYes ? env.PROCESSOR_HOST : await confirm('Set up a processor now?', false))) return 'skipped';
       const site = `https://${env.SITE_HOST}/?view=api`;
       for (;;) {
         if (env.OPENSKYCAM_AGENT_KEY && json((await api('/v1/me', env.OPENSKYCAM_AGENT_KEY)).text)?.scope === 'agent') break;
@@ -498,13 +525,14 @@ const steps = [
         say(`On the website, open ${bold('API access')} and create a key: Purpose ${bold('Agent')}, every camera.`);
         say('Setup uses it to register the processor; it is saved in .env for your own scripts too.');
         openUrl(site);
+        if (assumeYes) throw new Error('OPENSKYCAM_AGENT_KEY is missing or refused: create an Agent key for every camera on the website and put it in .env.');
         save({ OPENSKYCAM_AGENT_KEY: await ask('Agent key', { secret: true }) });
       }
       const host = await sshHost('SSH host of the processor machine', 'PROCESSOR_HOST');
       const python = ssh(host, 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; command -v python3 && python3 -c "import sys; sys.exit(sys.version_info < (3, 11))"');
       if (!python.ok) throw new Error(`${host} needs Python 3.11 or later.`);
       const suggested = ssh(host, 'hostname -s').out.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '-');
-      const device = await ask('Device name for this machine', { initial: env.PROCESSOR_DEVICE || suggested, problem: lib.problems.device });
+      const device = await ask('Device name for this machine', { initial: env.PROCESSOR_DEVICE || suggested, problem: lib.problems.device, key: 'PROCESSOR_DEVICE' });
       const created = await api('/v1/models/devices', env.OPENSKYCAM_AGENT_KEY, { method: 'POST', body: JSON.stringify({ id: device }) });
       if (![200, 201].includes(created.status)) throw new Error(`Registering ${device} failed: ${created.status} ${created.text}`);
       save({ PROCESSOR_DEVICE: device });
@@ -512,13 +540,13 @@ const steps = [
         say('');
         say(`Create a second key: Purpose ${bold('Run Workshop jobs')}, device ${bold(device)}, every camera.`);
         openUrl(site);
-        const key = await ask('Run Workshop jobs key', { secret: true });
+        const key = await ask('Run Workshop jobs key', { secret: true, initial: process.env.OPENSKYCAM_WORKSHOP_KEY, key: 'the environment variable OPENSKYCAM_WORKSHOP_KEY' });
         const me = json((await api('/v1/me', key)).text);
         if (me?.scope === 'workshop:run') {
           ssh(host, 'mkdir -p ~/.config/openskycam && umask 077 && cat > ~/.config/openskycam/workshop.key', key);
           break;
         }
-        say(red(me ? `That key's purpose is ${me.scope}.` : 'That key was refused.'));
+        tryAgain(me ? `That key's purpose is ${me.scope}, not Run Workshop jobs.` : 'That Run Workshop jobs key was refused.');
       }
       const commit = run('git', ['rev-parse', '--short', 'HEAD'], { quiet: true }).out.trim();
       const folder = `openskycam-processor/${commit}`;

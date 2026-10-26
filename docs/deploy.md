@@ -27,6 +27,7 @@ The setup does each step a command can do: it signs in to Cloudflare, creates th
 | `npm run setup` | Sets up everything that is not working yet. Steps that pass their check are skipped. |
 | `npm run setup -- relay` | Runs one step again, for example after changing the camera: `cloudflare`, `hosts`, `storage`, `store`, `access`, `website`, `ingest`, `relay` or `processor`. |
 | `npm run setup -- --check` | Checks every step of a running deployment and changes nothing. It exits with 1 if a required step fails. |
+| `npm run setup -- --yes` | Asks nothing: takes every answer from `.env` and stops, naming the key, at the first missing one. For coding agents and scripts ([Run it with an agent](agents.md#set-it-up-with-a-coding-agent)). |
 
 The setup needs key-based SSH login to each host (`ssh-copy-id <host>`). On Linux hosts it offers to run `loginctl enable-linger` and to install missing packages with `sudo`, which ask for your password there.
 
