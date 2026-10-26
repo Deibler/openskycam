@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Night",
+    "hex": "#0B0C0E",
+    "rgb": [
+      11,
+      12,
+      14
+    ],
+    "use": "Primary background, logo on light"
+  },
+  {
+    "name": "Slate",
+    "hex": "#6B7280",
+    "rgb": [
+      107,
+      114,
+      128
+    ],
+    "use": "Secondary text, captions"
+  },
+  {
+    "name": "Sky",
+    "hex": "#CBD5E1",
+    "rgb": [
+      203,
+      213,
+      225
+    ],
+    "use": "Dividers, subtle fills, accents"
+  },
+  {
+    "name": "Cloud",
+    "hex": "#F8FAFC",
+    "rgb": [
+      248,
+      250,
+      252
+    ],
+    "use": "Light background, logo on dark"
+  }
+]

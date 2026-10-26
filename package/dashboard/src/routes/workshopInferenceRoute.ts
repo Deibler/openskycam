@@ -1,0 +1,45 @@
+import { route } from '../../../shared/src/utils/routerSharedUtil';
+import type { App, MachineApp } from '../models/applicationSharedmodel';
+import * as h from '../handler/workshopInferenceHandler';
+import * as browse from '../handler/bucketBrowseInferenceHandler';
+export const workshopInferenceRoutes = [
+  route<App>('GET', '/api/workshop', h.loadHandler),
+  route<App>('PUT', '/api/workshop', h.saveHandler),
+  route<App>('GET', '/api/workshop/workflows/:id/deletion', h.workflowDeletionHandler),
+  route<App>('DELETE', '/api/workshop/workflows/:id', h.deleteWorkflowHandler),
+  route<App>('GET', '/api/workshop/buckets/:id/deletion', h.bucketDeletionHandler),
+  route<App>('DELETE', '/api/workshop/buckets/:id', h.deleteBucketHandler),
+  route<App>('GET', '/api/workshop/schedules', h.schedulesHandler),
+  route<App>('GET', '/api/workshop/runtimes', h.runtimesHandler),
+  route<App>('POST', '/api/workshop/runtimes', h.registerHandler),
+  route<App>('GET', '/api/workshop/summary', h.summaryHandler),
+  route<App>('GET', '/api/workshop/runs', h.runsHandler),
+  route<App>('POST', '/api/workshop/runs', h.runHandler),
+  route<App>('GET', '/api/workshop/runs/:id', h.detailHandler),
+  route<App>('GET', '/api/workshop/runs/:id/live', h.liveHandler),
+  route<App>('GET', '/api/workshop/runs/:id/review', h.runReviewHandler),
+  route<App>('GET', '/api/workshop/runs/:id/previews/:item/image', h.previewHandler),
+  route<App>('POST', '/api/workshop/runs/:id/cancel', h.cancelHandler),
+  route<App>('GET', '/api/workshop/buckets/:id', h.bucketHandler),
+  route<App>('GET', '/api/workshop/buckets/:id/browse', browse.browseHandler),
+  route<App>('POST', '/api/workshop/buckets/:id/versions', h.versionHandler),
+  route<App>('GET', '/api/workshop/versions/:id', h.exportHandler),
+  route<App>('POST', '/api/workshop/items/:id/save', h.retainHandler),
+  route<App>('PUT', '/api/workshop/items/:id/review', h.reviewHandler),
+  route<App>('GET', '/api/workshop/items/:id/image', h.imageHandler),
+  route<App>('GET', '/api/workshop/items/:id', browse.itemHandler),
+  route<App>('GET', '/api/workshop/items/:id/thumbnail', browse.thumbnailHandler),
+];
+export const workshopMachineInferenceRoutes = [
+  route<MachineApp>('GET', '/v1/workshop/versions/:id', h.machineVersionHandler),
+  route<MachineApp>('GET', '/v1/workshop/items/:id/image', h.machineImageHandler),
+  route<MachineApp>('GET', '/v1/workshop/runs/:id/previews/:item/image', h.machinePreviewHandler),
+  route<MachineApp>('POST', '/v1/workshop/claim', h.claimHandler),
+  route<MachineApp>('POST', '/v1/workshop/jobs/:id/progress', h.progressHandler),
+  route<MachineApp>('POST', '/v1/workshop/jobs/:id/heartbeat', h.heartbeatHandler),
+  route<MachineApp>('POST', '/v1/workshop/jobs/:id/fail', h.failHandler),
+  route<MachineApp>('POST', '/v1/workshop/jobs/:id/complete', h.completeHandler),
+  route<MachineApp>('GET', '/v1/workshop/jobs/:id/input', h.inputHandler),
+  route<MachineApp>('GET', '/v1/workshop/jobs/:id/models/:sha', h.artifactHandler),
+  route<MachineApp>('PUT', '/v1/workshop/jobs/:id/images/:sha', h.uploadHandler),
+];

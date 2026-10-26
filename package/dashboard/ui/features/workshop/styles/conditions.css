@@ -1,0 +1,369 @@
+/* Logic reads from top to bottom: check the statement, then take a named path. */
+.wk-node-condition {
+  --wk-node-tone: var(--wk-decision);
+  width: 264px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--wk-node-surface);
+}
+.wk-condition-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--wk-node-tone) 12%, transparent);
+  border-radius: 11px 11px 0 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--wk-node-tone) 20%, transparent);
+}
+.wk-condition-heading > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--wk-node-tone);
+}
+.wk-condition-heading > strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.wk-node-condition > .wk-input-port {
+  top: 24px;
+}
+.wk-condition-statement {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+.wk-node-rule {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.wk-node-rule > span {
+  color: var(--wk-node-tone);
+  font-weight: 500;
+}
+.wk-node-rule strong {
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.wk-node-rule small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.wk-more-rules {
+  margin-left: 30px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-condition-path {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--wk-node-tone) 18%, transparent);
+}
+.wk-condition-path > span {
+  font-size: 13px;
+  font-weight: 500;
+}
+.wk-condition-path > small {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wk-condition-path > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--wk-node-tone);
+}
+.wk-condition-path .react-flow__handle {
+  top: 50%;
+}
+.wk-condition-otherwise {
+  color: var(--muted-foreground);
+}
+.wk-condition-otherwise .react-flow__handle {
+  background: var(--wk-node-surface);
+  border: 2px solid var(--wk-node-tone);
+}
+
+/* The same contained block library serves the canvas and the nested rule editor. */
+.wk-step-palette h2,
+.wk-condition-inspector h2 {
+  font-size: 18px;
+}
+.wk-palette-intro,
+.wk-condition-intro {
+  color: var(--muted-foreground);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 6px 22px;
+}
+.wk-condition-intro strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.wk-step-palette h3 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 26px 8px 4px;
+}
+.wk-palette-caption {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin: 0 8px 12px;
+}
+.wk-block-choice[data-slot="button"] {
+  width: 100%;
+  height: auto;
+  min-height: 70px;
+  padding: 14px 8px;
+  gap: 12px;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+}
+.wk-block-choice > svg:first-child {
+  color: var(--wk-decision);
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.wk-block-choice > svg:last-child {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-left: auto;
+  color: var(--muted-foreground);
+}
+.wk-block-choice > span {
+  display: grid;
+  gap: 5px;
+}
+.wk-block-choice strong {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.wk-block-choice small {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.wk-condition-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 22px;
+  min-width: 0;
+}
+.wk-condition-fieldset > legend,
+.wk-day-field > legend {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin-bottom: 10px;
+}
+.wk-segmented {
+  display: flex;
+  gap: 3px;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  padding: 4px;
+  border-radius: 9px;
+}
+.wk-segmented > button[data-slot="button"] {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 400;
+  height: auto;
+  min-height: 38px;
+  white-space: normal;
+  padding: 8px 5px;
+  line-height: 1.4;
+}
+.wk-segmented > button[aria-pressed="true"] {
+  background: var(--wk-node-surface);
+  color: var(--foreground);
+  box-shadow: 0 1px 4px #0002;
+}
+.wk-rule-stack {
+  display: grid;
+  gap: 10px;
+}
+.wk-rule-join {
+  display: block;
+  margin: 0 8px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wk-decision);
+}
+.wk-rule-button[data-slot="button"] {
+  width: 100%;
+  height: auto;
+  min-height: 72px;
+  justify-content: flex-start;
+  gap: 10px;
+  white-space: normal;
+  text-align: left;
+  background: var(--wk-node-surface);
+  border-color: var(--border);
+  box-shadow: none;
+  padding: 13px 12px;
+}
+.wk-rule-button > svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.wk-rule-button > svg:last-child {
+  width: 14px;
+  margin-left: auto;
+}
+.wk-rule-button > span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.wk-rule-button strong {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.wk-rule-button small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.wk-add-check[data-slot="button"] {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.wk-condition-routing {
+  margin: 30px 4px 22px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  display: grid;
+  gap: 18px;
+}
+.wk-condition-routing > div {
+  display: grid;
+  gap: 5px;
+}
+.wk-condition-routing strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+.wk-condition-routing strong svg {
+  width: 14px;
+  height: 14px;
+  color: var(--wk-decision);
+}
+.wk-condition-routing span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.wk-condition-help {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 8px 0 22px;
+}
+.wk-rule-issues {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--destructive);
+  line-height: 1.6;
+  margin-top: 18px;
+}
+.wk-rule-fields .wk-field > span {
+  font-size: 14px;
+}
+.wk-rule-fields .wk-field input {
+  min-height: 42px;
+  font-size: 15px;
+}
+.wk-rule-fields .wk-field-pair .wk-field {
+  margin-bottom: 4px;
+}
+.wk-zone-field {
+  margin-top: 26px;
+}
+.wk-zone-field .wk-field {
+  margin-bottom: 10px;
+}
+.wk-zone-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wk-day-field {
+  margin-bottom: 24px;
+}
+.wk-day-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.wk-day-options [data-slot="button"] {
+  font-size: 13px;
+  padding-inline: 4px;
+  min-height: 44px;
+  box-shadow: none;
+}
+.wk-day-options [aria-pressed="true"],
+.wk-class-suggestions [aria-pressed="true"],
+.wk-zone-options [aria-pressed="true"] {
+  color: var(--wk-action);
+  background: color-mix(in srgb, var(--wk-action) 12%, var(--wk-node-surface));
+  border-color: color-mix(in srgb, var(--wk-action) 65%, var(--border));
+}
+.wk-condition-class {
+  margin-bottom: 24px;
+}
+.wk-condition-class .wk-field {
+  margin-bottom: 10px;
+}
+.wk-class-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 190px;
+  overflow: auto;
+  padding: 3px;
+}
+.wk-class-suggestions [data-slot="button"] {
+  white-space: normal;
+  height: auto;
+  min-height: 34px;
+  overflow-wrap: anywhere;
+}
+.wk-remove-check[data-slot="button"] {
+  margin-top: 16px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .wk-rule-fields .wk-field input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

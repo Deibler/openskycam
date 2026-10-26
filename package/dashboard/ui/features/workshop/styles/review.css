@@ -1,0 +1,575 @@
+/* Overview cards, workflow pages, and run summaries. */
+.wk-overview-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-bottom: 28px;
+}
+.wk-overview-filters .wk-search {
+  margin: 0;
+  flex: 1 1 260px;
+}
+.wk-overview-filters [role="group"],
+.wk-workflow-runs header [role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.wk-overview-filters [role="group"] button span {
+  margin-left: 2px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+/* Only these filters: reaching every group in the Workshop, the page's action color made the
+   reviewer's selected class chip and run tab dark text on a dark photo. */
+.wk-overview-filters [role="group"] > [aria-pressed="true"],
+.wk-workflow-runs header [role="group"] > [aria-pressed="true"] {
+  color: var(--wk-action);
+  background: color-mix(in srgb, var(--wk-action) 12%, transparent);
+}
+.wk-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 20px;
+}
+.wk-workflow-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 24px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+}
+.wk-workflow-card:focus-within {
+  border-color: var(--muted-foreground);
+}
+@media (hover: hover) {
+  .wk-workflow-card:hover {
+    border-color: var(--muted-foreground);
+  }
+}
+.wk-workflow-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.wk-workflow-card h2 {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+/* The title fills the card as its link; bucket rows sit above it and open the bucket. */
+.wk-card-link {
+  text-align: left;
+  cursor: pointer;
+}
+.wk-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+.wk-card-link:focus-visible {
+  outline: none;
+}
+.wk-card-link:focus-visible::after {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.wk-card-state {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-card-state[data-state="active"] {
+  color: var(--foreground);
+  border-color: var(--osc-sky);
+  background: color-mix(in srgb, var(--osc-sky) 16%, transparent);
+}
+.wk-card-state[data-state="setup"] {
+  border-style: dashed;
+}
+.wk-card-source {
+  margin-top: -8px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.wk-card-source svg,
+.wk-workflow-page .wk-eyebrow svg {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+.wk-card-stats,
+.wk-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 12px;
+}
+.wk-card-stats dt,
+.wk-kpis dt {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-card-stats dd,
+.wk-kpis dd {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+[data-attention] > dd::after,
+.wk-bucket-usage [data-attention]::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--osc-sky);
+  vertical-align: middle;
+}
+.wk-bucket-usage [data-attention]::before {
+  margin: 0 6px 0 0;
+}
+.wk-card-buckets {
+  border-top: 1px solid var(--border);
+}
+.wk-card-buckets li + li {
+  border-top: 1px solid var(--border);
+}
+.wk-card-buckets button {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 6px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+@media (hover: hover) {
+  .wk-card-buckets button:hover:not(:disabled) {
+    background: var(--accent);
+  }
+}
+.wk-card-buckets button:disabled {
+  cursor: default;
+  color: var(--muted-foreground);
+}
+.wk-card-buckets svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+}
+.wk-card-buckets strong {
+  display: block;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.wk-card-buckets small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-card-bucket-count {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.wk-card-review {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+}
+.wk-workflow-card > footer {
+  margin-top: auto;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* One series of columns: capped width, rounded data end, square at the baseline, hairline axis. */
+.wk-daily figcaption {
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.wk-daily figcaption span {
+  margin-left: 6px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 400;
+}
+.wk-daily-plot {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 140px;
+  border-bottom: 1px solid var(--border);
+}
+.wk-daily[data-compact] .wk-daily-plot {
+  height: 40px;
+}
+.wk-daily-column {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 4px 4px 0 0;
+}
+@media (hover: hover) {
+  .wk-daily-column:hover {
+    background: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
+  }
+}
+.wk-daily-column i {
+  width: min(24px, 70%);
+  border-radius: 4px 4px 0 0;
+  background: var(--osc-sky);
+}
+.wk-daily[data-compact] .wk-daily-column i {
+  width: min(14px, 80%);
+  border-radius: 2px 2px 0 0;
+}
+.wk-daily-tip {
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -110%);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--popover);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 3px 12px #0001;
+}
+/* Beside an outer day the tip leans inward, so it stays over the chart. */
+.wk-daily-tip[data-edge="start"] {
+  transform: translate(-12px, -110%);
+}
+.wk-daily-tip[data-edge="end"] {
+  transform: translate(calc(-100% + 12px), -110%);
+}
+.wk-daily-tip strong {
+  color: var(--foreground);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.wk-daily[data-compact] .wk-daily-tip {
+  top: auto;
+  bottom: 100%;
+  transform: translate(-50%, -4px);
+}
+.wk-daily-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wk-class-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-class-table th,
+.wk-class-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-weight: 400;
+}
+.wk-class-table thead th {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-class-table th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.wk-class-table tbody th {
+  font-weight: 500;
+}
+.wk-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.wk-meter meter {
+  width: 72px;
+  height: 6px;
+  border-radius: 3px;
+  appearance: none;
+  background: color-mix(in srgb, var(--osc-sky) 22%, transparent);
+}
+.wk-meter meter::-webkit-meter-bar {
+  height: 6px;
+  border: 0;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--osc-sky) 22%, transparent);
+}
+.wk-meter meter::-webkit-meter-optimum-value,
+.wk-meter meter::-webkit-meter-suboptimum-value,
+.wk-meter meter::-webkit-meter-even-less-good-value {
+  border-radius: 3px;
+  background: var(--osc-sky);
+}
+.wk-meter meter::-moz-meter-bar {
+  border-radius: 3px;
+  background: var(--osc-sky);
+}
+
+.wk-workflow-page .wk-page-heading {
+  margin-bottom: 28px;
+}
+.wk-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  padding: 20px 0;
+  margin-bottom: 36px;
+  border-block: 1px solid var(--border);
+}
+.wk-kpis dd {
+  font-size: 30px;
+}
+.wk-workflow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 40px;
+  margin-bottom: 48px;
+}
+.wk-workflow-runs > header,
+.wk-workflow-grid section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.wk-workflow-page h2 {
+  font-size: 20px;
+  font-weight: 500;
+}
+.wk-workflow-grid h2 {
+  font-size: 16px;
+}
+.wk-workflow-grid section > h2 {
+  margin-bottom: 12px;
+}
+.wk-preview {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.wk-preview-track {
+  height: 320px;
+}
+.wk-preview[data-scroll] {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.wk-preview .react-flow__node {
+  cursor: default;
+}
+/* React Flow blocks touch scrolling over the canvas; the preview does not pan on touch, so let a swipe scroll the page. */
+@media (pointer: coarse) {
+  .wk-preview .react-flow__pane {
+    touch-action: pan-x pan-y;
+  }
+}
+.wk-runs-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-runs-table th {
+  padding: 12px 16px;
+}
+.wk-runs-table .wk-row-link strong {
+  font-size: 15px;
+}
+.wk-runs-table small {
+  color: var(--muted-foreground);
+}
+.wk-runs-table [data-state="errors"] {
+  color: var(--destructive);
+}
+.wk-run-review-cell {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.wk-workflow-analysis {
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+.wk-workflow-analysis > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 48px;
+  margin-top: 24px;
+}
+.wk-workflow-analysis h3 {
+  font-size: 15px;
+  font-weight: 500;
+}
+.wk-workflow-analysis .wk-hint {
+  margin: 4px 0 12px;
+}
+.wk-bucket-list-row small.wk-bucket-source {
+  color: var(--foreground);
+}
+.wk-bucket-list-row small:not(.wk-bucket-source) {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wk-bucket-usage {
+  display: grid;
+  gap: 4px;
+}
+.wk-bucket-usage strong {
+  color: var(--foreground);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1100px) {
+  .wk-workflow-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .wk-runs-table th:nth-child(3),
+  .wk-runs-table td:nth-child(3) {
+    display: none;
+  }
+  .wk-table.wk-runs-table {
+    min-width: 0;
+  }
+  .wk-class-table th,
+  .wk-class-table td {
+    padding-inline: 6px;
+  }
+  .wk-meter meter {
+    display: none;
+  }
+  .wk-runs-table th,
+  .wk-runs-table td {
+    padding-inline: 8px;
+  }
+  .wk-card-buckets button {
+    grid-template-columns: 18px minmax(0, 1fr) 16px;
+  }
+  .wk-card-bucket-count {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+  }
+  .wk-card-buckets button > svg:last-child {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+}
+
+/* A sighting's surest photo, at the camera's shape. */
+.wk-sighting-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--osc-night);
+}
+.wk-sighting-list {
+  display: grid;
+  gap: 2px;
+}
+.wk-sighting-list button {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .wk-sighting-list button:hover {
+    background: var(--accent);
+  }
+}
+.wk-sighting-list button[aria-current] {
+  background: color-mix(in srgb, var(--osc-sky) 16%, transparent);
+}
+.wk-sighting-list strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.wk-sighting-list small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-sighting-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-sighting-state svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.wk-sighting-state svg[data-state="accepted"],
+.wk-sighting-state svg[data-state="mixed"] {
+  color: var(--osc-sky);
+}
+.wk-sighting-state svg[data-state="rejected"] {
+  opacity: 0.6;
+}
+.wk-run-sightings > header {
+  flex-wrap: wrap;
+}
+.wk-run-sightings > header > button {
+  margin-left: auto;
+}
+.wk-run-sightings .wk-sighting-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 800px) {
+  .wk-kpis dd {
+    font-size: 24px;
+  }
+}

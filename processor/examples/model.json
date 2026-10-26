@@ -1,0 +1,8 @@
+{
+  "family": "my-detector", "version": "v1", "name": "My detector",
+  "description": "Describe the model's intended operating conditions.",
+  "task": "object-detection", "adapter": "ultralytics",
+  "classes": [{ "id": 0, "name": "example-class" }],
+  "input": { "kind": "image", "training_size": 640, "preprocessing": "Ultralytics letterbox" },
+  "evaluations": [], "caveats": [], "dependencies": []
+}

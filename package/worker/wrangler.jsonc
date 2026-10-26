@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skyvision-ingest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  // Your account IDs are not in this file: "" values, and bindings without IDs, are filled from your
+  // environment or .env into wrangler.deploy.json (../shared/deploy-config.mjs).
+  // The footage store (external/store), reached through its tunnel and a Workers VPC service.
+  "vpc_services": [{ "binding": "STORE", "remote": true }],
+  "d1_databases": [
+    {
+      "binding": "CATALOG",
+      "database_name": "skyvision-catalog",
+      "migrations_dir": "../../db/migrations"
+    }
+  ],
+  "vars": {
+    // Comma-separated camera ids the relay may upload for.
+    "CAMERAS": ""
+  }
+  // Secrets, not in git: INGEST_TOKEN, and STORE_TOKEN (the store's ~/.config/skyvision-store/store.token)
+}

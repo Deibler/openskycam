@@ -1,0 +1,22 @@
+{
+  "name": "skyvision-docs",
+  "private": true,
+  "description": "Public documentation site, served as static assets by a Worker",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist --output-subdir pagefind && node check-links.mjs",
+    "check": "npm run build",
+    "config": "node ../shared/deploy-config.mjs --domains DOCS_HOST",
+    "deploy": "npm run build && npm run config && wrangler deploy --config wrangler.deploy.json"
+  },
+  "dependencies": {
+    "@astrojs/markdown-satteri": "0.4.3",
+    "astro": "7.3.8",
+    "lucide-static": "1.61.0",
+    "pagefind": "1.5.2"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3"
+  }
+}

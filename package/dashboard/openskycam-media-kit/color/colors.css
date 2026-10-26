@@ -1,0 +1,6 @@
+:root{
+  --osc-night: #0B0C0E; /* rgb(11, 12, 14) — Primary background, logo on light */
+  --osc-slate: #6B7280; /* rgb(107, 114, 128) — Secondary text, captions */
+  --osc-sky: #CBD5E1; /* rgb(203, 213, 225) — Dividers, subtle fills, accents */
+  --osc-cloud: #F8FAFC; /* rgb(248, 250, 252) — Light background, logo on dark */
+}

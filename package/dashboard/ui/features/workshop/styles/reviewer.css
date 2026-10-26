@@ -1,0 +1,2191 @@
+/* Run review: an always-dark theater, so faint night objects read the same in either appearance. */
+.wk-reviewer,
+.wk-annotator {
+  --rv-bg: #000;
+  --rv-surface: #0e0e10;
+  --rv-raised: #1c1c1e;
+  --rv-text: #f5f5f7;
+  --rv-muted: rgba(235, 235, 245, 0.6);
+  --rv-faint: rgba(235, 235, 245, 0.3);
+  --rv-line: rgba(84, 84, 88, 0.55);
+  --rv-fill: rgba(120, 120, 128, 0.24);
+  --rv-fill-strong: rgba(120, 120, 128, 0.36);
+  --rv-yes: #30d158;
+  --rv-no: #ff453a;
+  --rv-blue: #0a84ff;
+  --rv-ease: cubic-bezier(0.22, 0.9, 0.24, 1);
+  color: var(--rv-text);
+  background: var(--rv-bg);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); /* landscape notch */
+}
+.wk-reviewer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.wk-reviewer button,
+.wk-annotator button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wk-reviewer button:disabled,
+.wk-annotator button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+.wk-reviewer :focus-visible,
+.wk-annotator :focus-visible {
+  outline: 2px solid var(--rv-blue);
+  outline-offset: 2px;
+}
+.wk-reviewer kbd,
+.wk-annotator kbd {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  font:
+    500 11px / 1.4 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  opacity: 0.75;
+}
+@media (hover: none) {
+  .wk-reviewer kbd,
+  .wk-annotator kbd {
+    display: none;
+  }
+}
+
+/* Translucent material for controls floating over media. */
+.wk-glass {
+  color: var(--rv-text);
+  background: rgba(30, 30, 32, 0.62);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+.wk-round {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition:
+    transform 0.2s var(--rv-ease),
+    background 0.2s;
+}
+@media (hover: hover) {
+  .wk-round:hover:not(:disabled) {
+    background: rgba(58, 58, 60, 0.8);
+  }
+}
+.wk-round:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.wk-round svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Header */
+.wk-reviewer-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 60px;
+  padding: 0 20px;
+}
+.wk-reviewer-title {
+  min-width: 0;
+  flex: 1;
+}
+.wk-reviewer-title h1 {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-reviewer-title p {
+  color: var(--rv-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-feed-tabs {
+  display: flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--rv-fill);
+}
+.wk-feed-tabs button {
+  min-width: 88px;
+  padding: 5px 14px;
+  border-radius: 7px;
+  color: var(--rv-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background 0.25s var(--rv-ease),
+    color 0.25s;
+}
+.wk-feed-tabs [aria-pressed="true"] {
+  color: var(--rv-text);
+  background: #636366;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    0 3px 1px rgba(0, 0, 0, 0.04);
+}
+.wk-reviewer-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.wk-reviewer-progress i {
+  display: block;
+  height: 100%;
+  background: var(--rv-yes);
+  transition: width 0.6s var(--rv-ease);
+}
+.wk-reviewer-empty {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  color: var(--rv-muted);
+  text-align: center;
+}
+
+/* Feed: one sighting per screen, snapping like a phone feed. */
+.wk-feed,
+.wk-batch {
+  grid-row: -2;
+  grid-column: 1;
+}
+.wk-feed {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.wk-feed::-webkit-scrollbar,
+.wk-pager::-webkit-scrollbar,
+.wk-filmstrip::-webkit-scrollbar {
+  display: none;
+}
+.wk-feed-item {
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.wk-feed-nav {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(-50%);
+}
+.wk-feed-nav span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wk-feed-nav small {
+  color: var(--rv-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Card */
+.wk-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  height: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 6px 92px 18px 28px;
+}
+.wk-card-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--rv-surface);
+  isolation: isolate;
+}
+.wk-pager {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.wk-slide {
+  position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.wk-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.wk-stage-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  transition: transform 0.55s var(--rv-ease);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+video.wk-stage-layer {
+  opacity: 0;
+  transition:
+    transform 0.55s var(--rv-ease),
+    opacity 0.3s;
+}
+video.wk-stage-layer[data-ready] {
+  opacity: 1;
+}
+.wk-outline {
+  position: absolute;
+  z-index: 1;
+  border: 1.5px solid var(--box);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  transition:
+    left 0.55s var(--rv-ease),
+    top 0.55s var(--rv-ease),
+    width 0.55s var(--rv-ease),
+    height 0.55s var(--rv-ease);
+}
+.wk-outline[data-dropped] {
+  border-style: dashed;
+  opacity: 0.8;
+}
+.wk-outline[data-dropped] span {
+  top: calc(100% + 5px);
+  bottom: auto;
+  text-decoration: line-through;
+}
+.wk-outline span {
+  position: absolute;
+  font-style: normal;
+  left: -1.5px;
+  bottom: calc(100% + 5px);
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: #000;
+  background: var(--box);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.wk-outline span small {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+}
+/* A tracked object's path through its recording, under its outline. */
+.wk-trajectories {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.wk-trajectories polyline {
+  fill: none;
+  stroke: var(--box);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.75;
+}
+.wk-trajectories circle {
+  fill: var(--box);
+  opacity: 0.9;
+}
+/* Unzoomed, the browser keeps swipes for the feed but leaves pinches to the stage; zoomed, every drag pans. */
+.wk-stage {
+  touch-action: pan-x pan-y;
+}
+.wk-stage[data-looking] {
+  touch-action: none;
+}
+.wk-stage[data-looking] .wk-stage-layer,
+.wk-stage[data-looking] .wk-outline {
+  transition: none;
+}
+/* The overview while zoomed: small, and only there while it's needed. */
+.wk-map {
+  position: absolute;
+  top: 58px;
+  left: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  animation: wk-pop 0.2s var(--rv-ease);
+}
+.wk-map-frame {
+  position: relative;
+  width: 96px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 4px 14px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+}
+.wk-map-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.wk-map-frame i {
+  position: absolute;
+  border: 1.5px solid #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.wk-map-reset {
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+}
+.wk-ring {
+  position: absolute;
+  z-index: 1;
+  border: 1.5px solid #ffd60a;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.wk-clip {
+  cursor: pointer;
+}
+.wk-clip-paused {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  animation: wk-pop 0.25s var(--rv-ease);
+  pointer-events: none;
+}
+.wk-clip-paused svg {
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
+  fill: currentColor;
+}
+.wk-clip-failed {
+  position: absolute;
+  left: 50%;
+  bottom: 36px;
+  z-index: 2;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--rv-muted);
+  font-size: 13px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.wk-clip-bar {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 16px;
+  z-index: 2;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+.wk-clip-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: #fff;
+}
+.wk-clip-bar b {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: #ffd60a;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.5);
+}
+.wk-card-top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+.wk-card-top > * {
+  pointer-events: auto;
+}
+.wk-page-pill,
+.wk-glass-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wk-page-pill svg,
+.wk-glass-button svg {
+  width: 15px;
+  height: 15px;
+}
+.wk-glass-button {
+  transition:
+    transform 0.2s var(--rv-ease),
+    background 0.2s;
+}
+@media (hover: hover) {
+  .wk-glass-button:hover {
+    background: rgba(58, 58, 60, 0.8);
+  }
+}
+.wk-glass-button:active {
+  transform: scale(0.95);
+}
+.wk-zoom > span,
+.wk-open-on > span,
+.wk-to-grid > span {
+  display: contents;
+}
+.wk-open-on {
+  margin-left: auto;
+}
+.wk-open-on ~ .wk-speed {
+  margin-left: 0;
+}
+.wk-speed {
+  justify-content: center;
+  min-width: 44px;
+  margin-left: auto;
+  padding: 0 10px;
+}
+.wk-page-step {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  border-radius: 50%;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.2s var(--rv-ease);
+}
+.wk-page-step[data-side="left"] {
+  left: 14px;
+}
+.wk-page-step[data-side="right"] {
+  right: 14px;
+}
+.wk-page-step svg {
+  width: 22px;
+  height: 22px;
+}
+.wk-page-step:focus-visible {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .wk-card-stage:hover .wk-page-step {
+    opacity: 1;
+  }
+}
+.wk-page-step:active {
+  transform: scale(0.92);
+}
+.wk-page-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  z-index: 2;
+  display: none;
+  gap: 6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.wk-page-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.wk-page-dots [data-on] {
+  background: #fff;
+  transform: scale(1.15);
+}
+
+/* Card footer: caption, decision, and the page strip. */
+.wk-card-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 24px;
+}
+.wk-card-caption {
+  min-width: 0;
+}
+.wk-card-caption h2 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.wk-card-caption > p:last-child {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--rv-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-card-chips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.wk-card-chips [data-kind="overlap"] {
+  color: #ffd60a;
+}
+.wk-card-chips [data-kind="staged"] {
+  color: var(--rv-blue);
+}
+.wk-card-chips span {
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: var(--rv-muted);
+  background: var(--rv-fill);
+  font-size: 12px;
+  font-weight: 500;
+}
+.wk-decide {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wk-decide [data-choice] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 138px;
+  height: 54px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition:
+    transform 0.18s var(--rv-ease),
+    background 0.25s,
+    color 0.25s,
+    box-shadow 0.25s;
+}
+.wk-decide [data-choice] svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 2.5;
+}
+.wk-decide [data-choice]:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.wk-decide [data-choice="no"] {
+  color: var(--rv-no);
+  background: rgba(255, 69, 58, 0.16);
+}
+.wk-decide [data-choice="yes"] {
+  color: var(--rv-yes);
+  background: rgba(48, 209, 88, 0.16);
+}
+@media (hover: hover) {
+  .wk-decide [data-choice="no"]:hover {
+    background: rgba(255, 69, 58, 0.24);
+  }
+}
+@media (hover: hover) {
+  .wk-decide [data-choice="yes"]:hover {
+    background: rgba(48, 209, 88, 0.24);
+  }
+}
+.wk-decide [data-choice="no"][aria-pressed="true"] {
+  color: #fff;
+  background: var(--rv-no);
+  box-shadow: 0 8px 24px rgba(255, 69, 58, 0.3);
+}
+.wk-decide [data-choice="yes"][aria-pressed="true"] {
+  color: #000;
+  background: var(--rv-yes);
+  box-shadow: 0 8px 24px rgba(48, 209, 88, 0.3);
+}
+.wk-decide [aria-pressed="true"] svg {
+  animation: wk-pop 0.35s var(--rv-ease);
+}
+.wk-decide [aria-pressed="true"] kbd {
+  color: inherit;
+  background: rgba(0, 0, 0, 0.16);
+}
+.wk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wk-action {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  color: var(--rv-text);
+  background: var(--rv-fill);
+  transition:
+    transform 0.18s var(--rv-ease),
+    background 0.2s;
+}
+@media (hover: hover) {
+  .wk-action:hover {
+    background: var(--rv-fill-strong);
+  }
+}
+.wk-action:active {
+  transform: scale(0.94);
+}
+.wk-action svg {
+  width: 20px;
+  height: 20px;
+}
+.wk-action small {
+  display: none;
+}
+/* Saved lights up like a bookmarked video. */
+.wk-action[data-kind="save"] svg {
+  fill: currentColor;
+  fill-opacity: 0;
+  transition: fill-opacity 0.2s;
+}
+.wk-action[data-kind="save"][aria-pressed="true"] {
+  color: #ffd60a;
+}
+.wk-action[data-kind="save"][aria-pressed="true"] svg {
+  fill-opacity: 1;
+}
+.wk-action > span,
+.wk-decide [data-choice] > span {
+  display: contents;
+}
+/* Double-tap: a check that pops where the finger landed, then floats off. */
+.wk-burst {
+  position: absolute;
+  z-index: 4;
+  color: var(--rv-yes);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
+  animation: wk-burst 0.9s var(--rv-ease) forwards;
+}
+.wk-burst svg {
+  width: 104px;
+  height: 104px;
+  stroke-width: 3;
+}
+@keyframes wk-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(-14deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12) rotate(0);
+  }
+  32% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -95%) scale(1.25);
+  }
+}
+.wk-filmstrip {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+.wk-filmstrip button {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  color: var(--rv-muted);
+  background: var(--rv-raised);
+  opacity: 0.55;
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
+}
+@media (hover: hover) {
+  .wk-filmstrip button:hover {
+    opacity: 0.85;
+  }
+}
+.wk-filmstrip button[aria-current="true"] {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--rv-text);
+}
+.wk-filmstrip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wk-filmstrip svg {
+  width: 18px;
+  height: 18px;
+}
+.wk-filmstrip [data-review]::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.wk-filmstrip [data-review="accepted"]::after {
+  background: var(--rv-yes);
+}
+.wk-filmstrip [data-review="rejected"]::after {
+  background: var(--rv-no);
+}
+
+/* What it is: one button per model class, numbered as its key, and None. */
+.wk-class-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.wk-card-caption .wk-class-keys {
+  margin-top: 8px;
+}
+.wk-class-keys button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--rv-text);
+  background: var(--rv-fill);
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.18s var(--rv-ease);
+}
+.wk-class-keys button:active {
+  transform: scale(0.95);
+}
+.wk-class-keys i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--box);
+}
+.wk-class-keys [aria-pressed="true"] {
+  background: color-mix(in srgb, var(--box) 30%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--box);
+}
+.wk-class-keys [data-kind="none"] svg {
+  width: 14px;
+  height: 14px;
+  color: var(--rv-no);
+  stroke-width: 2.5;
+}
+.wk-class-keys [data-kind="none"][aria-pressed="true"] {
+  background: rgba(255, 69, 58, 0.24);
+  box-shadow: inset 0 0 0 1.5px var(--rv-no);
+}
+@media (hover: hover) {
+  .wk-class-keys button:hover {
+    background: var(--rv-fill-strong);
+  }
+}
+
+/* Batch grid: whole videos, a row of photo crops per sighting; only the wrong ones need marking. */
+.wk-batch {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--rv-bg);
+}
+.wk-batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 6px 20px 12px;
+  border-bottom: 0.5px solid var(--rv-line);
+}
+.wk-batch-step {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.wk-batch-step div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 6px;
+  line-height: 1.25;
+}
+.wk-batch-step strong {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wk-batch-step small {
+  color: var(--rv-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wk-batch-trail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.wk-batch-trail .wk-glass-button > span {
+  display: contents;
+}
+.wk-batch-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: #000;
+  background: var(--rv-yes);
+  font-size: 15px;
+  font-weight: 600;
+  transition:
+    transform 0.18s var(--rv-ease),
+    box-shadow 0.25s;
+}
+.wk-batch-confirm:active {
+  transform: scale(0.96);
+}
+.wk-batch-confirm svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+.wk-batch-confirm small {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+.wk-batch-confirm kbd {
+  color: inherit;
+  background: rgba(0, 0, 0, 0.16);
+}
+@media (hover: hover) {
+  .wk-batch-confirm:hover {
+    box-shadow: 0 8px 24px rgba(48, 209, 88, 0.3);
+  }
+}
+.wk-batch-hint {
+  margin: 10px 20px 0;
+  color: #ffd60a;
+  font-size: 13px;
+  font-weight: 500;
+}
+.wk-batch-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 20px 48px;
+}
+.wk-batch-end {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+.wk-batch-video {
+  padding: 8px 0 14px;
+  border-bottom: 0.5px solid var(--rv-line);
+}
+.wk-batch-video h3 button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px -6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--rv-muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wk-batch-video h3 svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+@media (hover: hover) {
+  .wk-batch-video h3 button:hover,
+  .wk-batch-label:hover {
+    color: var(--rv-text);
+    background: var(--rv-fill);
+  }
+}
+.wk-batch-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 5px 0;
+}
+.wk-batch-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 10px;
+  text-align: left;
+}
+.wk-batch-label strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-batch-label small {
+  color: var(--rv-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-batch-cells {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 6px;
+}
+.wk-batch-cell {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--rv-raised);
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s var(--rv-ease);
+}
+.wk-batch-cell:active {
+  transform: scale(0.97);
+}
+.wk-batch-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.2s;
+}
+.wk-batch-cell[data-focus] {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+}
+.wk-batch-cell[aria-pressed="true"] {
+  box-shadow: 0 0 0 3px var(--rv-blue);
+}
+.wk-batch-cell[data-mark="none"] img {
+  opacity: 0.3;
+}
+.wk-batch-cell[data-review]::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.5);
+}
+.wk-batch-cell[data-review="accepted"]::after {
+  background: var(--rv-yes);
+}
+.wk-batch-cell[data-review="rejected"]::after {
+  background: var(--rv-no);
+}
+.wk-batch-cell[data-review="pending"]::after {
+  display: none;
+}
+.wk-batch-mark {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  padding: 1px 7px;
+  border-radius: 6px;
+  color: #000;
+  background: var(--box, #fff);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-batch-cell[data-mark="none"] .wk-batch-mark {
+  color: #fff;
+  background: var(--rv-no);
+}
+
+/* End of the feed */
+.wk-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+.wk-end-mark {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  color: var(--rv-muted);
+  background: var(--rv-fill);
+}
+.wk-end-mark[data-done] {
+  color: #000;
+  background: var(--rv-yes);
+  animation: wk-pop 0.5s var(--rv-ease);
+}
+.wk-end-mark svg {
+  width: 40px;
+  height: 40px;
+  stroke-width: 2.5;
+}
+.wk-end h2 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.wk-end p {
+  max-width: 360px;
+  color: var(--rv-muted);
+  font-size: 15px;
+}
+.wk-end div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.wk-toast {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 10px 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  animation: wk-drop 0.35s var(--rv-ease);
+}
+.wk-toast button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: var(--rv-blue);
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .wk-toast button:hover {
+    background: rgba(10, 132, 255, 0.15);
+  }
+}
+@keyframes wk-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes wk-drop {
+  from {
+    transform: translate(-50%, -12px);
+    opacity: 0;
+  }
+}
+@keyframes wk-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  45% {
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wk-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+/* Label editor */
+.wk-annotator {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  outline: none;
+}
+.wk-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+.wk-editor-bar {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 14px;
+  border-bottom: 0.5px solid var(--rv-line);
+  background: var(--rv-raised);
+}
+.wk-editor-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.wk-editor-trail {
+  display: flex;
+  justify-content: flex-end;
+}
+/* A deeper blue than --rv-blue, so white text passes 4.5:1. */
+.wk-editor-trail [data-slot="button"] {
+  min-width: 84px;
+  border-radius: 999px;
+  color: #fff;
+  background: #0071e3;
+}
+.wk-editor-step {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.wk-editor-step div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 6px;
+  line-height: 1.25;
+}
+.wk-editor-step strong {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wk-editor-step small {
+  color: var(--rv-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.wk-icon-button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--rv-text);
+  transition: background 0.15s;
+}
+@media (hover: hover) {
+  .wk-icon-button:hover:not(:disabled) {
+    background: var(--rv-fill);
+  }
+}
+.wk-icon-button[aria-pressed="true"] {
+  color: var(--rv-blue);
+  background: rgba(10, 132, 255, 0.18);
+}
+.wk-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+.wk-editor-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.wk-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 5px;
+  background: var(--rv-line);
+}
+.wk-zoom-level {
+  min-width: 56px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+@media (hover: hover) {
+  .wk-zoom-level:hover {
+    background: var(--rv-fill);
+  }
+}
+.wk-editor-canvas {
+  position: relative;
+  overflow: hidden;
+  background: var(--rv-bg);
+  touch-action: none;
+  cursor: grab;
+}
+.wk-editor-canvas[data-tool="box"] {
+  cursor: crosshair;
+}
+.wk-editor-canvas[data-panning] {
+  cursor: grabbing;
+}
+.wk-editor-canvas .wk-stage-layer {
+  transition: none;
+}
+.wk-editor-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.wk-edit-box {
+  fill: color-mix(in srgb, var(--box) 7%, transparent);
+  stroke: var(--box);
+  stroke-width: 1.5;
+  cursor: move;
+}
+.wk-editor-canvas[data-tool="box"] .wk-edit-box {
+  cursor: crosshair;
+}
+[data-selected] > .wk-edit-box {
+  fill: color-mix(in srgb, var(--box) 14%, transparent);
+  stroke-width: 2;
+}
+.wk-edit-handle {
+  fill: #fff;
+  stroke: var(--box);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+.wk-edit-handle[data-handle="nw"],
+.wk-edit-handle[data-handle="se"] {
+  cursor: nwse-resize;
+}
+.wk-edit-handle[data-handle="ne"],
+.wk-edit-handle[data-handle="sw"] {
+  cursor: nesw-resize;
+}
+.wk-edit-handle[data-handle="n"],
+.wk-edit-handle[data-handle="s"] {
+  cursor: ns-resize;
+}
+.wk-edit-handle[data-handle="e"],
+.wk-edit-handle[data-handle="w"] {
+  cursor: ew-resize;
+}
+.wk-edit-draft {
+  fill: rgba(10, 132, 255, 0.12);
+  stroke: var(--rv-blue);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.wk-edit-tag {
+  position: absolute;
+  padding: 1px 6px;
+  border-radius: 5px 5px 5px 0;
+  color: #000;
+  background: var(--box);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+.wk-class-picker {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 5px;
+  border-radius: 12px;
+  background: rgba(44, 44, 46, 0.88);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  animation: wk-pop 0.2s var(--rv-ease);
+  cursor: default;
+}
+.wk-class-picker button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  font-size: 14px;
+  text-align: left;
+}
+.wk-class-picker button:focus-visible {
+  outline: none;
+  color: #fff;
+  background: var(--rv-blue);
+}
+@media (hover: hover) {
+  .wk-class-picker button:hover {
+    color: #fff;
+    background: var(--rv-blue);
+  }
+}
+.wk-class-picker kbd {
+  margin-left: auto;
+}
+.wk-class-picker i,
+.wk-editor-panel i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.wk-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  overflow-y: auto;
+  padding: 20px 16px;
+  border-left: 0.5px solid var(--rv-line);
+  background: var(--rv-surface);
+}
+.wk-editor-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 6px;
+  color: var(--rv-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.wk-editor-panel h3 span {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--rv-fill);
+  letter-spacing: 0;
+}
+.wk-editor-panel li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 9px;
+}
+.wk-editor-panel li[data-selected] {
+  background: rgba(10, 132, 255, 0.18);
+}
+.wk-object {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 9px;
+  font-size: 14px;
+  text-align: left;
+}
+.wk-object strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-object small {
+  margin-left: auto;
+  color: var(--rv-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-editor-classes li {
+  gap: 9px;
+  padding: 6px;
+  font-size: 14px;
+}
+.wk-editor-classes kbd {
+  margin-left: auto;
+}
+.wk-editor-hint {
+  padding: 0 6px;
+  color: var(--rv-muted);
+  font-size: 13px;
+}
+.wk-editor-review {
+  margin-top: auto;
+}
+.wk-editor-review .wk-decide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 10px;
+}
+.wk-editor-review [data-choice] {
+  min-width: 0;
+  height: 48px;
+  padding: 0 12px;
+  font-size: 16px;
+}
+.wk-editor-error {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #ff9f95;
+  background: rgba(255, 69, 58, 0.14);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .wk-card {
+    padding: 4px 16px 14px;
+  }
+  .wk-feed-nav {
+    display: none;
+  }
+  .wk-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .wk-editor-panel {
+    max-height: 38dvh;
+    gap: 16px;
+    border-left: 0;
+    border-top: 0.5px solid var(--rv-line);
+  }
+  .wk-editor-bar {
+    grid-template-columns: auto 1fr auto;
+  }
+  .wk-editor-step div {
+    display: none;
+  }
+}
+/* Phones: a full-screen feed like TikTok. The header floats over the media, the caption sits
+   bottom-left, the choices climb the right edge, and the clip's progress runs along the bottom. */
+@media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
+  .wk-reviewer {
+    grid-template-rows: minmax(0, 1fr);
+    touch-action: manipulation;
+  }
+  .wk-reviewer-bar {
+    position: absolute;
+    top: 0;
+    left: env(safe-area-inset-left);
+    right: env(safe-area-inset-right);
+    z-index: 4;
+    gap: 10px;
+    height: auto;
+    padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+    pointer-events: none;
+  }
+  .wk-reviewer-bar > * {
+    pointer-events: auto;
+  }
+  .wk-reviewer-progress {
+    display: none;
+  }
+  .wk-reviewer-title {
+    order: 3;
+    flex: 1;
+    text-align: right;
+  }
+  .wk-reviewer-title h1,
+  .wk-reviewer-title p {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  .wk-reviewer-title h1 {
+    color: #fff;
+    font-size: 13px;
+  }
+  .wk-feed-tabs {
+    gap: 16px;
+    margin: 0 auto;
+    padding: 0;
+    background: none;
+  }
+  .wk-feed-tabs button {
+    position: relative;
+    min-width: 0;
+    padding: 6px 1px;
+    border-radius: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  .wk-feed-tabs [aria-pressed="true"] {
+    color: #fff;
+    background: none;
+    box-shadow: none;
+  }
+  .wk-feed-tabs [aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 22px;
+    height: 2.5px;
+    margin-left: -11px;
+    border-radius: 2px;
+    background: #fff;
+  }
+  .wk-batch {
+    padding-top: calc(52px + env(safe-area-inset-top));
+  }
+  .wk-batch-bar {
+    padding: 6px 12px 10px;
+  }
+  .wk-batch-trail {
+    width: 100%;
+  }
+  .wk-batch-confirm {
+    flex: 1;
+    justify-content: center;
+  }
+  .wk-batch-body {
+    padding: 6px 12px calc(32px + env(safe-area-inset-bottom));
+  }
+  .wk-batch-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .wk-batch-label {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .wk-batch-cells {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  }
+
+  .wk-card {
+    display: block;
+    padding: 0;
+  }
+  .wk-card-stage {
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+  }
+  .wk-filmstrip,
+  .wk-page-step,
+  .wk-feed-nav,
+  .wk-page-pill,
+  .wk-zoom > span {
+    display: none;
+  }
+  .wk-card-top {
+    top: calc(58px + env(safe-area-inset-top));
+    left: auto;
+    right: 4px;
+    gap: 0;
+  }
+  .wk-map {
+    top: calc(58px + env(safe-area-inset-top));
+    left: 12px;
+  }
+  .wk-zoom,
+  .wk-open-on,
+  .wk-to-grid {
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+  .wk-open-on > span,
+  .wk-to-grid > span {
+    display: none;
+  }
+  .wk-card-top svg {
+    width: 22px;
+    height: 22px;
+  }
+  .wk-speed {
+    width: 44px;
+    height: 44px;
+    min-width: 0;
+    padding: 0;
+    font-size: 15px;
+  }
+  .wk-page-dots {
+    display: flex;
+    top: calc(64px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+  .wk-clip-bar {
+    left: 0;
+    right: 0;
+    bottom: env(safe-area-inset-bottom);
+    height: 2px;
+    border-radius: 0;
+  }
+  .wk-clip-bar b {
+    display: none;
+  }
+  .wk-clip-failed {
+    top: 50%;
+    bottom: auto;
+  }
+
+  .wk-card-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    display: block;
+    padding: 0 12px calc(12px + env(safe-area-inset-bottom)) 16px;
+    pointer-events: none;
+  }
+  .wk-card-footer > * {
+    pointer-events: auto;
+  }
+  .wk-card-caption {
+    padding-right: 60px;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.85),
+      0 0 10px rgba(0, 0, 0, 0.5);
+    transition:
+      opacity 0.2s,
+      transform 0.25s var(--rv-ease);
+  }
+  /* Two lines: what it is, then the rest, muted on one line until tapped. Notices only when true. */
+  .wk-card-title {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .wk-card-title button {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin: -8px 0;
+    padding: 8px 0;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-shadow: inherit;
+  }
+  .wk-card-title svg {
+    width: 17px;
+    height: 17px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+    transition: transform 0.2s var(--rv-ease);
+  }
+  .wk-card-title [aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+  .wk-card-caption > p.wk-card-meta {
+    margin-top: 1px;
+    white-space: normal;
+  }
+  .wk-card-meta button {
+    display: block;
+    max-width: 100%;
+    margin: -4px 0;
+    padding: 4px 0;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: inherit;
+  }
+  .wk-card-meta [aria-expanded="true"] {
+    white-space: normal;
+  }
+  .wk-card-caption > p.wk-card-notes {
+    margin-top: 3px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .wk-card-notes span + span::before {
+    content: " · ";
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .wk-card-notes [data-kind="staged"] {
+    color: #64d2ff;
+  }
+  .wk-card-notes [data-kind="overlap"] {
+    color: #ffd60a;
+  }
+  /* The classes, opened from the title: one row that scrolls sideways, 30px chips with 44px to tap. */
+  .wk-card-caption .wk-class-keys {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 2px -16px 0;
+    padding: 7px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wk-card-caption .wk-class-keys::-webkit-scrollbar {
+    display: none;
+  }
+  .wk-card-caption .wk-class-keys button {
+    position: relative;
+    flex: none;
+    height: 30px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+    text-shadow: none;
+  }
+  .wk-card-caption .wk-class-keys button::after {
+    content: "";
+    position: absolute;
+    inset: -7px -4px;
+  }
+  /* The class's own color, solid, under black or white text, whichever reads better (4.5:1 or more). */
+  .wk-card-caption .wk-class-keys [aria-pressed="true"] {
+    color: var(--box-ink);
+    background: var(--box);
+    box-shadow: none;
+  }
+  .wk-card-caption .wk-class-keys [aria-pressed="true"] i {
+    box-shadow: 0 0 0 1.5px var(--box-ink);
+  }
+  /* Edit, Save and Get above None and Confirm, nearest the thumb: 28px glyphs, 11px names, 44px rows. */
+  .wk-actions,
+  .wk-actions .wk-decide {
+    flex-direction: column;
+    gap: 0;
+  }
+  .wk-actions {
+    position: absolute;
+    right: 2px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  /* Bare icons with a shadow, as on TikTok's rail; a choice lights its icon. */
+  .wk-action,
+  .wk-actions [data-choice],
+  .wk-actions [data-choice][aria-pressed="true"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 52px;
+    min-width: 0;
+    height: auto;
+    min-height: 48px;
+    padding: 2px 0;
+    border-radius: 0;
+    color: #fff;
+    background: none;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+  .wk-action small {
+    display: block;
+    font-size: 11px;
+  }
+  .wk-action > span,
+  .wk-actions [data-choice] > span {
+    display: grid;
+    place-items: center;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+    transition:
+      color 0.25s,
+      transform 0.18s var(--rv-ease);
+  }
+  .wk-action svg,
+  .wk-actions [data-choice] svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2;
+  }
+  .wk-action:active > span,
+  .wk-actions [data-choice]:active > span {
+    transform: scale(0.86);
+  }
+  .wk-actions [data-choice="yes"][aria-pressed="true"] > span {
+    color: var(--rv-yes);
+  }
+  .wk-actions [data-choice="no"][aria-pressed="true"] > span {
+    color: var(--rv-no);
+  }
+  .wk-action[data-kind="save"][aria-pressed="true"] {
+    color: #fff;
+  }
+  .wk-action[data-kind="save"][aria-pressed="true"] > span {
+    color: #ffd60a;
+  }
+  .wk-actions kbd {
+    display: none;
+  }
+  /* The label editor: Cancel, the photo, and Done on top, with the tools on a row of their own below. */
+  .wk-editor-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+    height: auto;
+    padding: calc(6px + env(safe-area-inset-top)) 12px 8px;
+  }
+  .wk-editor-tools {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+  .wk-editor-step div {
+    display: flex;
+  }
+  .wk-editor-step small,
+  .wk-editor-panel section:has(> .wk-editor-classes) {
+    display: none;
+  }
+
+  /* Bare glyphs over the photo, with a shadow to read on any sky and 44px to tap. No glass: blurring
+     the photo behind every control is costly on older iPhones and draws the eye from the object. */
+  .wk-reviewer-bar .wk-glass,
+  .wk-card-top .wk-glass,
+  .wk-map-reset {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  .wk-reviewer-bar .wk-round svg {
+    width: 26px;
+    height: 26px;
+  }
+  .wk-reviewer-bar .wk-round svg,
+  .wk-card-top svg,
+  .wk-map-reset svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+  }
+  .wk-speed {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  }
+  .wk-clip-paused {
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* The end of the feed, centered below the header rather than under it. */
+  .wk-card.wk-end {
+    display: flex;
+    padding: calc(64px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  }
+  /* One card per screen: nothing of one draws over the next mid-swipe. */
+  .wk-feed-item {
+    overflow: hidden;
+    contain: paint;
+  }
+  .wk-card-stage {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* After a decision: a stamp low in the middle, gone in 0.55s, and Undo small in the bottom corner,
+     clear of the top buttons and the rail. The caption steps up while Undo is there. */
+  .wk-stamp {
+    position: absolute;
+    left: 50%;
+    bottom: 26%;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    margin-left: -38px;
+    border-radius: 50%;
+    color: #000;
+    background: var(--rv-yes);
+    pointer-events: none;
+    animation: wk-stamp 0.55s var(--rv-ease) forwards;
+  }
+  .wk-stamp[data-choice="no"] {
+    color: #fff;
+    background: var(--rv-no);
+  }
+  .wk-stamp svg {
+    width: 40px;
+    height: 40px;
+    stroke-width: 3;
+  }
+  .wk-undo-row {
+    position: absolute;
+    left: calc(12px + env(safe-area-inset-left));
+    right: 64px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 5;
+    display: flex;
+    pointer-events: none;
+    animation: wk-rise 0.25s var(--rv-ease);
+  }
+  .wk-undo,
+  .wk-undo-error {
+    position: relative;
+    pointer-events: auto;
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(28, 28, 30, 0.9);
+    box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .wk-undo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px 0 11px;
+  }
+  .wk-undo svg {
+    width: 16px;
+    height: 16px;
+  }
+  .wk-undo::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+  .wk-undo-error {
+    max-width: 100%;
+    min-height: 32px;
+    padding: 7px 14px;
+    overflow: hidden;
+    border-radius: 16px;
+    color: #ffb4ad;
+    font-size: 13px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wk-undo-error[aria-expanded="true"] {
+    white-space: normal;
+  }
+  /* The object is in Undo's corner: Undo takes the other end of its row. */
+  .wk-reviewer[data-box-undo="end"] .wk-undo-row {
+    justify-content: flex-end;
+  }
+  .wk-card[data-lifted] .wk-card-caption {
+    transform: translateY(-40px);
+  }
+
+  /* Hold a finger on the photo to see it alone; chrome over the detection steps back. */
+  .wk-reviewer-bar,
+  .wk-card-top,
+  .wk-card-footer,
+  .wk-page-dots,
+  .wk-undo-row,
+  .wk-map,
+  .wk-outline > span {
+    transition: opacity 0.2s;
+  }
+  .wk-reviewer[data-peek] :is(.wk-reviewer-bar, .wk-card-top, .wk-card-footer, .wk-page-dots, .wk-undo-row, .wk-map),
+  .wk-reviewer[data-peek] .wk-outline > span {
+    opacity: 0;
+  }
+  .wk-reviewer[data-box-top]:not([data-peek]) .wk-reviewer-bar,
+  .wk-reviewer[data-box-top]:not([data-peek]) .wk-card[data-current] :is(.wk-card-top, .wk-page-dots),
+  .wk-reviewer[data-box-caption]:not([data-peek]) .wk-card[data-current] .wk-card-caption,
+  .wk-reviewer[data-box-undo="both"]:not([data-peek]) .wk-undo-row {
+    opacity: 0.35;
+  }
+}
+/* Landscape phones are too short for the rail, so the actions run along the bottom, Yes nearest the right thumb. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .wk-actions,
+  .wk-actions .wk-decide {
+    flex-direction: row;
+  }
+  .wk-card-caption {
+    padding-right: 290px;
+  }
+  .wk-undo-row {
+    right: 290px;
+  }
+  /* The label editor keeps its side panel and a one-row toolbar. */
+  .wk-editor-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .wk-editor-panel {
+    max-height: none;
+    border-top: 0;
+    border-left: 0.5px solid var(--rv-line);
+  }
+  .wk-editor-bar {
+    grid-template-columns: auto 1fr auto;
+  }
+  .wk-editor-tools {
+    grid-row: auto;
+    grid-column: auto;
+  }
+  .wk-editor-step div {
+    display: none;
+  }
+}
+/* Touch: 44px targets (Apple HIG). On the narrowest phones the editor's tool row narrows its buttons to fit. */
+@media (pointer: coarse) {
+  .wk-round,
+  .wk-icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .wk-zoom-level {
+    height: 44px;
+  }
+  .wk-object {
+    min-height: 44px;
+  }
+  .wk-feed-tabs button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .wk-class-keys button {
+    height: 44px;
+  }
+}
+@media (pointer: coarse) and (max-width: 360px) {
+  .wk-editor-tools .wk-icon-button {
+    width: 36px;
+  }
+  .wk-zoom-level {
+    min-width: 48px;
+  }
+}

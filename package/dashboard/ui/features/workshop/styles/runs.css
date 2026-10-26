@@ -1,0 +1,351 @@
+.wk-test-launch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wk-test-launch label {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.wk-test-launch input {
+  width: 70px;
+  min-height: 40px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-editor-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.wk-settings-panel[data-run] {
+  width: 420px;
+  flex-basis: 420px;
+  display: flex;
+  flex-direction: column;
+}
+.wk-test-panel-heading {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.wk-test-panel-heading h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.wk-run-output {
+  min-width: 0;
+}
+.wk-run-output[data-compact] {
+  overflow: auto;
+  padding: 24px 20px;
+}
+.wk-run-progress {
+  max-width: 680px;
+  margin-bottom: 32px;
+}
+.wk-run-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin-bottom: 14px;
+}
+.wk-run-status > svg {
+  width: 20px;
+  color: var(--osc-sky);
+}
+.wk-run-status > button {
+  margin-left: auto;
+}
+.wk-run-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-run-count > strong {
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1;
+}
+.wk-run-count > span {
+  color: var(--muted-foreground);
+  font-size: 16px;
+}
+.wk-run-progress progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--secondary);
+  accent-color: var(--osc-sky);
+}
+.wk-run-progress progress::-webkit-progress-bar {
+  background: var(--secondary);
+}
+.wk-run-progress progress::-webkit-progress-value {
+  background: var(--osc-sky);
+}
+.wk-run-progress p {
+  margin: 16px 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.wk-run-stage {
+  display: grid;
+  gap: 3px;
+}
+.wk-run-stage > span {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-run-progress .wk-test-retention {
+  font-size: 13px;
+}
+.wk-run-results > header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.wk-run-output h2 {
+  font-size: 17px;
+  font-weight: 500;
+}
+.wk-run-results > header > span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.wk-run-empty {
+  color: var(--muted-foreground);
+  padding: 24px 0;
+  line-height: 1.6;
+}
+.wk-run-results .wk-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+.wk-run-output[data-compact] .wk-image-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.wk-run-output[data-compact] .wk-image-caption {
+  padding: 9px;
+  gap: 5px;
+}
+.wk-run-output[data-compact] .wk-image-caption > span {
+  font-size: 11px;
+}
+.wk-run-output[data-compact] .wk-prediction-link {
+  gap: 5px;
+  font-size: 12px;
+}
+.wk-run-output[data-compact] .wk-confidence {
+  font-size: 11px;
+}
+.wk-run-output .wk-prediction-summary {
+  min-width: 0;
+}
+.wk-run-bucket-links {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.wk-run-back {
+  margin-left: -12px;
+  margin-bottom: 24px;
+}
+.wk-run-steps {
+  border-block: 1px solid var(--border);
+  padding: 24px 0;
+  margin-bottom: 32px;
+}
+.wk-run-steps > div {
+  display: flex;
+  gap: 16px;
+  overflow: auto;
+  margin-top: 16px;
+}
+.wk-run-steps > div > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.wk-run-steps small {
+  color: var(--muted-foreground);
+  text-transform: capitalize;
+}
+.wk-run-steps strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.wk-run-steps [data-active] {
+  border-color: var(--osc-sky);
+  background: color-mix(in srgb, var(--osc-sky) 10%, transparent);
+}
+/* Every card keeps the Active row so the live step can move without resizing the row. */
+.wk-run-steps > div > div > span {
+  font-size: 12px;
+  color: var(--foreground);
+  visibility: hidden;
+}
+.wk-run-steps [data-active] > span {
+  visibility: visible;
+}
+.wk-run-issues {
+  margin-bottom: 28px;
+}
+.wk-run-issues p {
+  color: var(--muted-foreground);
+  margin-top: 10px;
+  font-size: 14px;
+}
+.wk-node-running {
+  outline: 3px solid var(--osc-sky);
+  outline-offset: 5px;
+}
+.wk-run-history > button {
+  width: 100%;
+  padding: 24px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 20px;
+  align-items: center;
+  gap: 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .wk-run-history > button:hover {
+    background: var(--secondary);
+  }
+}
+.wk-run-history strong {
+  font-weight: 500;
+  font-size: 17px;
+}
+.wk-run-history small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.wk-run-history svg {
+  width: 18px;
+}
+@media (max-width: 1100px) {
+  .wk-editor-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .wk-editor-actions {
+    gap: 6px;
+  }
+}
+@media (max-width: 640px) {
+  .wk-test-launch input {
+    min-height: 44px;
+  }
+  .wk-test-launch button {
+    min-height: 44px;
+  }
+  .wk-settings-panel[data-run] {
+    width: 100%;
+    flex-basis: auto;
+    max-height: 75%;
+  }
+  .wk-run-page .wk-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .wk-run-history > button {
+    grid-template-columns: minmax(0, 1fr) 100px;
+    gap: 12px;
+  }
+  .wk-run-history > button > svg {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .wk-run-steps > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    gap: 10px;
+  }
+  .wk-run-steps > div > div {
+    min-width: 0;
+  }
+}
+@media (max-height: 500px) and (max-width: 1000px) {
+  .wk-shell:has(.wk-run-page) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wk-shell:has(.wk-run-page) .wk-sidebar {
+    display: none;
+  }
+  .wk-shell:has(.wk-run-page) .wk-mobile-menu,
+  .wk-shell:has(.wk-run-page) .wk-topbar-brand {
+    display: flex;
+  }
+  .wk-shell:has(.wk-run-page) .wk-crumb {
+    display: none;
+  }
+  .wk-run-page {
+    padding-block: 20px;
+  }
+  .wk-run-page .wk-page-heading {
+    margin-bottom: 24px;
+  }
+  .wk-run-page .wk-run-back {
+    margin-bottom: 12px;
+  }
+}
+.wk-editor-title {
+  flex: 1 1 240px;
+}
+.wk-editor-title label {
+  flex: 1;
+  max-width: 330px;
+}
+.wk-editor-title input {
+  width: 100%;
+}
+.wk-draft {
+  flex: none;
+}
+.wk-run-steps {
+  margin-top: 32px;
+}
+@media (max-width: 1000px) {
+  .wk-editor-actions .wk-output-link,
+  .wk-editor-title .wk-draft {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .wk-check-label {
+    display: none;
+  }
+  button:has(> .wk-check-label) {
+    min-width: 44px;
+  }
+}
+@media (max-height: 500px) and (max-width: 1000px) {
+  .wk-settings-panel[data-active="false"] {
+    display: none;
+  }
+}

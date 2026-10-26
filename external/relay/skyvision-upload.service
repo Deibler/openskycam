@@ -1,0 +1,14 @@
+[Unit]
+Description=SkyVision uploader: finished segments -> ingest Worker -> R2
+StartLimitIntervalSec=0
+
+[Service]
+EnvironmentFile=%h/.config/skyvision/relay.env
+EnvironmentFile=-%h/.config/skyvision/ingest.env
+ExecStart=%h/skyvision/upload.sh
+Restart=always
+RestartSec=10
+Nice=10
+
+[Install]
+WantedBy=default.target

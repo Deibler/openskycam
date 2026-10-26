@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The public documentation: static files only, no Worker code. Its host (DOCS_HOST) comes from
+  // your environment or .env (../shared/deploy-config.mjs). Unlike the website it has no Access.
+  "name": "skyvision-docs",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./dist", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page" }
+}

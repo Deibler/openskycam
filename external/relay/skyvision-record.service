@@ -1,0 +1,15 @@
+[Unit]
+Description=SkyVision recorder: camera RTSP -> 60 s MP4 segments in RAM
+StartLimitIntervalSec=0
+
+[Service]
+EnvironmentFile=%h/.config/skyvision/relay.env
+ExecStart=%h/skyvision/record.sh
+SuccessExitStatus=255
+Restart=always
+RestartSec=2
+RestartSteps=5
+RestartMaxDelaySec=10
+
+[Install]
+WantedBy=default.target

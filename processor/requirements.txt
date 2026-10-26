@@ -1,0 +1,7 @@
+# Baseline versions, verified on an Apple Silicon Mac. Install in an isolated environment.
+av==16.1.0
+torch==2.10.0
+ultralytics==8.4.58
+numpy==2.4.3
+scipy==1.17.1
+opencv-python==4.13.0.92

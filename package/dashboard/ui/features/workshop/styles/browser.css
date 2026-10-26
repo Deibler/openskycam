@@ -1,0 +1,598 @@
+/* A bucket page: heading and tabs above its contents, all scrolling as one page. */
+.wk-library-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wk-library-heading {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.wk-library-heading > div:first-of-type {
+  flex: 1;
+  min-width: 0;
+}
+.wk-library-heading h1 {
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+.wk-library-heading p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wk-library-heading .wk-back {
+  margin: 0;
+}
+.wk-library-page .wk-bucket-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.wk-library-page .wk-bucket-tabs > [role="tablist"] {
+  flex: none;
+  margin: 0;
+  padding: 0 24px;
+  width: 100%;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--border);
+}
+.wk-library-page .wk-bucket-tabs > [role="tablist"] button {
+  padding: 10px 0;
+  min-height: 44px;
+  font-size: 13px;
+  flex: none;
+}
+.wk-library-contents {
+  margin: 0;
+}
+.wk-library-contents[data-state="inactive"],
+.wk-library-info[data-state="inactive"] {
+  display: none;
+}
+.wk-library-info {
+  padding: 28px;
+  overflow: auto;
+}
+.wk-library-info .wk-bucket-lineage {
+  max-width: 600px;
+}
+.wk-browser-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 8px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  max-height: 44vh;
+  overflow-y: auto;
+  flex: none;
+}
+.wk-browser-filters label,
+.wk-browser-filters legend {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.wk-browser-filters > label:first-child {
+  grid-column: 1 / -1;
+}
+.wk-browser-filters input:not([type="checkbox"]),
+.wk-browser-filters select,
+.wk-library-heading select {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+}
+.wk-browser-filters input:focus-visible,
+.wk-browser-filters select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.wk-browser-filters fieldset {
+  min-width: 0;
+}
+.wk-browser-filters fieldset > div {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.wk-browser-filters label.wk-browser-saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+}
+.wk-browser-filters input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--wk-action);
+}
+.wk-browser-filters footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.wk-browser-filters footer small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wk-thumbnail-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--osc-slate);
+}
+.wk-thumbnail-placeholder svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.5;
+}
+.wk-browser-empty,
+.wk-browser-loading {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 42px 20px;
+  text-align: center;
+}
+.wk-browser-empty > svg {
+  width: 28px;
+  height: 28px;
+  color: var(--muted-foreground);
+}
+.wk-browser-empty p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.wk-browser-error {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--destructive);
+}
+/* A bucket like a profile: a toolbar that stays in reach and a grid of sightings, newest first. */
+.wk-bucket-explorer {
+  position: relative;
+}
+.wk-grid-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 12px 20px 10px;
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+.wk-grid-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wk-grid-search > label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 4px 0 12px;
+  border-radius: 10px;
+  background: var(--muted);
+}
+.wk-grid-search > label > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.wk-grid-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--foreground);
+  font-size: 14px;
+}
+.wk-grid-search > label > button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--muted-foreground);
+}
+.wk-grid-search > label > button svg {
+  width: 14px;
+  height: 14px;
+}
+.wk-chips {
+  display: flex;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 0 20px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.wk-chips::-webkit-scrollbar {
+  display: none;
+}
+.wk-chip {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--background);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+@media (hover: hover) {
+  .wk-chip:hover {
+    background: var(--accent);
+  }
+}
+.wk-chip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.wk-chip > svg:last-of-type:not(:first-child) {
+  opacity: 0.6;
+}
+.wk-chip[data-active] {
+  color: var(--background);
+  background: var(--foreground);
+  border-color: var(--foreground);
+}
+.wk-chip b {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: var(--foreground);
+  background: var(--background);
+  font-size: 11px;
+}
+/* The native picker sits invisibly over the pill, so a tap opens it anywhere. */
+.wk-chip > select,
+.wk-chip > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.wk-chip-clear {
+  border-color: transparent;
+  color: var(--muted-foreground);
+}
+.wk-grid-toolbar .wk-browser-filters {
+  margin: 0 -20px;
+  padding: 4px 20px 6px;
+  border-bottom: 0;
+}
+.wk-grid-body {
+  padding: 0 20px 96px;
+}
+.wk-grid-count {
+  padding: 14px 0 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-grid-day {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+.wk-grid-day h3 {
+  padding: 18px 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.wk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 4px;
+}
+.wk-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.2s cubic-bezier(0.22, 0.9, 0.24, 1),
+    opacity 0.2s;
+}
+.wk-tile:active {
+  transform: scale(0.97);
+}
+.wk-tile:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.wk-tile-image,
+.wk-tile-image > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.wk-tile-image > img {
+  object-fit: cover;
+  opacity: 0;
+  transition:
+    opacity 0.3s,
+    transform 0.4s cubic-bezier(0.22, 0.9, 0.24, 1);
+}
+.wk-tile-image[data-loaded] > img {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .wk-tile:hover .wk-tile-image > img {
+    transform: scale(1.04);
+  }
+}
+.wk-tile-status,
+.wk-tile-count,
+.wk-tile-caption,
+.wk-tile-check {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.wk-tile svg {
+  width: 14px;
+  height: 14px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}
+.wk-tile-status {
+  left: 6px;
+  top: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  text-shadow: none;
+}
+.wk-tile-status svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 3;
+  filter: none;
+}
+.wk-tile-status[data-review="accepted"] {
+  color: #000;
+  background: #30d158;
+}
+.wk-tile-status[data-review="rejected"] {
+  color: #fff;
+  background: #ff453a;
+}
+.wk-tile-count {
+  right: 7px;
+  top: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-tile-caption {
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.wk-tile-caption strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-tile-caption time {
+  flex: none;
+  font-weight: 500;
+  opacity: 0.92;
+}
+.wk-tile-caption strong + time::before {
+  content: "· ";
+}
+.wk-tile-caption svg {
+  margin-left: auto;
+  fill: currentColor;
+}
+.wk-tile-check {
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.25);
+  color: transparent;
+  text-shadow: none;
+}
+.wk-tile[aria-pressed] .wk-tile-caption svg {
+  display: none;
+}
+.wk-tile[aria-pressed="false"] .wk-tile-image {
+  opacity: 0.7;
+}
+.wk-tile[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 3px #0a84ff;
+}
+.wk-tile[aria-pressed="true"] .wk-tile-check {
+  color: #fff;
+  background: #0a84ff;
+  border-color: #0a84ff;
+}
+.wk-select-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 999px;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 0.5px var(--border);
+  transform: translateX(-50%);
+}
+.wk-select-bar button {
+  border-radius: 999px;
+}
+.wk-browser-footer {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.wk-browser-loading {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 42px 20px;
+  text-align: center;
+}
+@media (max-width: 800px) {
+  .wk-library-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .wk-library-heading h1 {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+  .wk-library-heading p,
+  .wk-library-heading .wk-eyebrow {
+    display: none;
+  }
+  .wk-library-heading .wk-bucket-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+  .wk-library-heading .wk-bucket-actions > button:last-child {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+  .wk-library-page .wk-bucket-tabs > [role="tablist"] {
+    padding-inline: 16px;
+    gap: 20px;
+  }
+  .wk-library-page select {
+    min-height: 44px;
+  }
+  .wk-browser-filters input:not([type="checkbox"]) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .wk-grid-toolbar {
+    padding: 10px 12px 8px;
+  }
+  .wk-chips,
+  .wk-grid-toolbar .wk-browser-filters {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+  .wk-chip {
+    height: 34px;
+  }
+  /* Phones: three edge-to-edge columns with hairline gaps, like a profile. */
+  .wk-grid-body {
+    padding: 0 0 96px;
+  }
+  .wk-grid-count,
+  .wk-grid-day h3 {
+    padding-inline: 12px;
+  }
+  .wk-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .wk-tile {
+    border-radius: 0;
+  }
+}
+/* Touch: 44px tap areas. The 34px chips keep their look; a tap layer reaches 5px past each edge (6px from inside the border), and the row pads so it isn't clipped. */
+@media (pointer: coarse) {
+  .wk-grid-search > label {
+    height: 44px;
+  }
+  .wk-chips {
+    padding-block: 5px;
+    margin-block: -5px;
+  }
+  .wk-chip::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+    z-index: 1;
+  }
+  .wk-chip > select,
+  .wk-chip > input {
+    top: -6px;
+    height: calc(100% + 12px);
+    z-index: 2;
+  }
+}

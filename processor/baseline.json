@@ -1,0 +1,14 @@
+{
+  "process_fps": 4,
+  "yolo_imgsz": 1280,
+  "confidence": 0.3,
+  "nms_iou": 0.5,
+  "enabled_classes": [1, 2, 3],
+  "half": false,
+  "tta": false,
+  "deep_scan": false,
+  "edge_margin": 0,
+  "min_box_px": 0,
+  "max_aspect": 1000000,
+  "track_lost_buffer": 12
+}

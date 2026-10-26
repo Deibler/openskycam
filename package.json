@@ -1,0 +1,20 @@
+{
+  "name": "skyvision",
+  "private": true,
+  "description": "Repository commands. Each Worker in package/ keeps its own dependencies and lockfile, which Workers Builds deploys from.",
+  "scripts": {
+    "setup": "node setup/setup.mjs",
+    "postinstall": "npm ci --prefix package/dashboard --no-audit --no-fund && npm ci --prefix package/worker --no-audit --no-fund && npm ci --prefix package/docs --no-audit --no-fund",
+    "dev": "[ -f package/dashboard/.dev.vars ] || printf 'DEV_VIEWER_EMAIL=%s\\n' \"$(git config user.email)\" > package/dashboard/.dev.vars; npm ci --prefix package/dashboard --no-audit --no-fund && npm start --prefix package/dashboard",
+    "wrangler": "npm exec --prefix package/dashboard -- wrangler",
+    "audit": "npm audit --prefix package/dashboard; npm audit --prefix package/worker",
+    "typecheck": "npm run typecheck --prefix package/dashboard && npm run typecheck --prefix package/worker",
+    "format": "biome format --write .",
+    "lint": "biome format . && npm run check:architecture --prefix package/dashboard && npm run check:architecture --prefix package/worker && make lint",
+    "test": "npm test --prefix package/dashboard && npm run test:ui --prefix package/dashboard && npm run test:react --prefix package/dashboard && npm test --prefix package/worker",
+    "check": "make check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15"
+  }
+}

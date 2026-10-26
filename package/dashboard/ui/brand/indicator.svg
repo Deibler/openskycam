@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-49.21 -123.59 157.59 157.59" aria-hidden="true" focusable="false" fill="currentColor" stroke="currentColor">
+<g class="brand-signal-base">
+<circle cx="0.00" cy="0.00" r="21.40" fill="none" stroke="currentColor" stroke-width="5.20" class="brand-signal-lens" pathLength="1" />
+<path d="M17.55 -16.37 L67.14 -62.60" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-uplink" pathLength="1" />
+<path d="M-4.54 -23.57 L-18.64 -96.75" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-downlink" pathLength="1" />
+<path d="M64.62 -74.82 L-12.24 -102.24" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-crosslink" pathLength="1" />
+<circle cx="75.92" cy="-70.78" r="12.00" fill="currentColor" class="brand-signal-near-star" />
+<circle cx="-20.25" cy="-105.09" r="8.50" fill="currentColor" class="brand-signal-far-star" />
+</g>
+<g class="brand-signal-ink">
+<circle cx="0.00" cy="0.00" r="21.40" fill="none" stroke="currentColor" stroke-width="5.20" class="brand-signal-lens" pathLength="1" />
+<path d="M17.55 -16.37 L67.14 -62.60" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-uplink" pathLength="1" />
+<path d="M-4.54 -23.57 L-18.64 -96.75" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-downlink" pathLength="1" />
+<path d="M64.62 -74.82 L-12.24 -102.24" fill="none" stroke="currentColor" stroke-width="3.40" stroke-linecap="round" class="brand-signal-crosslink" pathLength="1" />
+<circle cx="75.92" cy="-70.78" r="12.00" fill="currentColor" class="brand-signal-near-star" />
+<circle cx="-20.25" cy="-105.09" r="8.50" fill="currentColor" class="brand-signal-far-star" />
+</g>
+</svg>

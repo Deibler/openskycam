@@ -1,0 +1,22 @@
+{
+  "name": "skyvision-ingest",
+  "private": true,
+  "description": "Ingest Worker: stores relay segments on the footage store",
+  "type": "module",
+  "scripts": {
+    "config": "node ../shared/deploy-config.mjs",
+    "dev": "npm run config && wrangler dev --config wrangler.deploy.json",
+    "deploy": "npm run config && wrangler deploy --config wrangler.deploy.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "check": "npm run check:architecture && npm run typecheck && npm test",
+    "check:architecture": "node ../shared/check-architecture.mjs worker && node --test ../shared/architecture.check.mjs ../shared/deploy-config.check.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.2.3",
+    "@cloudflare/workers-types": "^5.20260922.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.136.3"
+  }
+}

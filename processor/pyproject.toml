@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openskycam-processor"
+version = "0.2.0"
+description = "OpenSkyCam model publishing, managed device models, and archive inference"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+runtime = ["av==16.1.0", "torch==2.10.0", "ultralytics==8.4.58", "numpy==2.4.3", "scipy==1.17.1", "opencv-python==4.13.0.92"]
+
+[project.scripts]
+skyvision-processor = "skyvision_processor.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["skyvision_processor*"]

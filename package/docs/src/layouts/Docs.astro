@@ -1,0 +1,290 @@
+---
+import path from 'node:path';
+import { getCollection } from 'astro:content';
+import { tabs, repository, href } from '../nav';
+import { icon } from '../icons';
+import '../styles/docs.css';
+
+const { page, headings } = Astro.props;
+const all = await getCollection('docs');
+const byId = new Map(all.map(entry => [entry.id, entry]));
+const sections = tabs.flatMap(t => t.sections);
+const order = sections.flatMap(s => Object.keys(s.pages));
+const missing = order.filter(id => !byId.has(id));
+if (missing.length) throw new Error(`Sidebar pages without a file: ${missing.join(', ')}`);
+const unlisted = all.map(e => e.id).filter(id => !order.includes(id));
+if (unlisted.length) throw new Error(`Pages missing from the sidebar (src/nav.ts): ${unlisted.join(', ')}`);
+
+const at = order.indexOf(page.id);
+const previous = at > 0 ? byId.get(order[at - 1]) : undefined;
+const next = at < order.length - 1 ? byId.get(order[at + 1]) : undefined;
+const tab = tabs.find(t => t.sections.some(s => page.id in s.pages))!;
+const section = sections.find(s => page.id in s.pages)!;
+const label = (id: string) => byId.get(id)!.data.sidebar ?? byId.get(id)!.data.title;
+const toc = headings.filter((h: { depth: number }) => h.depth === 2 || h.depth === 3);
+const title = page.id === 'index' ? 'openskycam docs' : `${page.data.title} · openskycam docs`;
+const markdown = `# ${page.data.title}\n\n${page.data.description}\n\n${page.body ?? ''}`;
+const edit = `${repository}/edit/main/${path.posix.normalize(`package/docs/${page.filePath}`)}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={page.data.description} />
+    <meta property="og:title" content={page.data.title} />
+    <meta property="og:description" content={page.data.description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/outfit-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#docs-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-row">
+        <a class="brand" href="/" aria-label="openskycam docs home">
+          <img class="logo-dark" src="/logo-dark.svg" alt="openskycam" />
+          <img class="logo-light" src="/logo-light.svg" alt="openskycam" />
+          <span>docs</span>
+        </a>
+        <button class="search-trigger" type="button" data-search-open aria-label="Search documentation">
+          <Fragment set:html={icon('Search')} />
+          <span>Search...</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <a class="header-link" href={repository} aria-label="openskycam on GitHub">
+          <Fragment set:html={icon('GitHub')} /><span>GitHub</span>
+        </a>
+        <button class="icon-button" type="button" data-theme-toggle aria-label="Toggle color theme">
+          <Fragment set:html={icon('Moon')} /><Fragment set:html={icon('Sun')} />
+        </button>
+      </div>
+      <nav class="tabs" aria-label="Documentation sections">
+        {
+          tabs.map(t => (
+            <a href={href(Object.keys(t.sections[0].pages)[0])} aria-current={t === tab ? 'page' : undefined}>
+              <Fragment set:html={icon(t.icon)} />
+              {t.label}
+            </a>
+          ))
+        }
+      </nav>
+    </header>
+
+    <dialog class="search-dialog" data-search-dialog aria-label="Search documentation">
+      <form method="dialog" class="search-bar">
+        <Fragment set:html={icon('Search')} />
+        <input data-search-input type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" />
+        <button type="submit" aria-label="Close search"><kbd>Esc</kbd></button>
+      </form>
+      <div class="search-results" data-search-results><p>Type to search every page.</p></div>
+    </dialog>
+
+    <details class="mobile-navigation">
+      <summary><Fragment set:html={icon('Menu')} />{section.title}<span>{label(page.id)}</span></summary>
+      <nav class="docs-sidebar" aria-label="Documentation">
+        {
+          tab.sections.map(s => (
+            <section>
+              <h2><Fragment set:html={icon(s.icon)} />{s.title}</h2>
+              <ul>
+                {Object.entries(s.pages).map(([id, name]) => (
+                  <li>
+                    <a href={href(id)} aria-current={id === page.id ? 'page' : undefined}>
+                      <Fragment set:html={icon(name)} />
+                      {label(id)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </nav>
+    </details>
+
+    <div class="docs-frame">
+      <aside class="sidebar-column">
+        <nav class="docs-sidebar" aria-label="Documentation">
+          {
+            tab.sections.map(s => (
+              <section>
+                <h2><Fragment set:html={icon(s.icon)} />{s.title}</h2>
+                <ul>
+                  {Object.entries(s.pages).map(([id, name]) => (
+                    <li>
+                      <a href={href(id)} aria-current={id === page.id ? 'page' : undefined}>
+                        <Fragment set:html={icon(name)} />
+                        {label(id)}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          }
+        </nav>
+      </aside>
+
+      <main id="docs-content">
+        <article class="prose" data-pagefind-body data-pagefind-meta={`title:${page.data.title}`}>
+          <header class="page-header">
+            <p class="eyebrow" data-pagefind-ignore>{section.title}</p>
+            <div class="title-row">
+              <h1>{page.data.title}</h1>
+              <button class="copy-page" type="button" data-copy-markdown data-pagefind-ignore>
+                <Fragment set:html={icon('Copy')} /><Fragment set:html={icon('Check')} /><span>Copy page</span>
+              </button>
+            </div>
+            <p class="lede">{page.data.description}</p>
+          </header>
+          <slot />
+        </article>
+        <div class="page-footer" data-pagefind-ignore>
+          <a href={edit}><Fragment set:html={icon('Pencil')} />Edit this page on GitHub</a>
+        </div>
+        <nav class="pager" aria-label="Previous and next pages" data-pagefind-ignore>
+          {
+            previous ? (
+              <a href={href(previous.id)} rel="prev">
+                <span>Previous</span>
+                <strong><Fragment set:html={icon('ChevronLeft')} />{label(previous.id)}</strong>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a href={href(next.id)} rel="next">
+                <span>Next</span>
+                <strong>{label(next.id)}<Fragment set:html={icon('ChevronRight')} /></strong>
+              </a>
+            )
+          }
+        </nav>
+        <script type="text/markdown" id="page-markdown" set:html={markdown.replaceAll('</script', '<\\/script')} />
+      </main>
+
+      <aside class="toc-column">
+        {
+          toc.length > 0 && (
+            <nav class="docs-toc" aria-label="On this page">
+              <h2><Fragment set:html={icon('TextAlignStart')} />On this page</h2>
+              <ul>
+                {toc.map((h: { depth: number; slug: string; text: string }) => (
+                  <li class={h.depth === 3 ? 'nested' : undefined}>
+                    <a href={`#${h.slug}`}>{h.text}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )
+        }
+      </aside>
+    </div>
+
+    <script>
+      const root = document.documentElement;
+      document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+        const dark = root.dataset.theme
+          ? root.dataset.theme === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = dark ? 'light' : 'dark';
+        try {
+          localStorage.setItem('theme', root.dataset.theme);
+        } catch {}
+      });
+
+      // Copy buttons show a check for a moment after copying.
+      const copied = (button: HTMLElement) => {
+        button.dataset.copied = '';
+        setTimeout(() => delete button.dataset.copied, 1500);
+      };
+      const copyPage = document.querySelector<HTMLButtonElement>('[data-copy-markdown]');
+      copyPage?.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(document.getElementById('page-markdown')?.textContent ?? '');
+        copied(copyPage);
+      });
+      document.querySelectorAll<HTMLButtonElement>('[data-copy-code]').forEach(button =>
+        button.addEventListener('click', async () => {
+          await navigator.clipboard.writeText(button.closest('figure')?.querySelector('pre')?.textContent ?? '');
+          copied(button);
+        }),
+      );
+
+      // Keep the current page visible in a long sidebar.
+      document.querySelector('.sidebar-column [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+
+      // Mark the heading being read in "On this page": the last one above the top quarter of the window.
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('.docs-toc a')];
+      const targets = links.map(a => document.getElementById(decodeURIComponent(a.hash.slice(1))));
+      const mark = () => {
+        let current = 0;
+        targets.forEach((target, i) => {
+          if (target && target.getBoundingClientRect().top < innerHeight / 4) current = i;
+        });
+        links.forEach((a, i) => (i === current ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+      };
+      if (links.length) {
+        let pending = false;
+        addEventListener('scroll', () => {
+          if (pending) return;
+          pending = true;
+          requestAnimationFrame(() => {
+            pending = false;
+            mark();
+          });
+        }, { passive: true });
+        mark();
+      }
+
+      const dialog = document.querySelector<HTMLDialogElement>('[data-search-dialog]')!;
+      const input = document.querySelector<HTMLInputElement>('[data-search-input]')!;
+      const results = document.querySelector<HTMLDivElement>('[data-search-results]')!;
+      type Result = { url: string; excerpt: string; meta: { title?: string } };
+      let pagefind: { search: (q: string) => Promise<{ results: { data: () => Promise<Result> }[] }> } | undefined;
+      const open = () => {
+        dialog.showModal();
+        input.focus();
+        input.select();
+      };
+      document.querySelector('[data-search-open]')?.addEventListener('click', open);
+      document.addEventListener('keydown', event => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          event.preventDefault();
+          open();
+        }
+      });
+      dialog.addEventListener('click', event => {
+        if (event.target === dialog) dialog.close();
+      });
+      let latest = 0;
+      input.addEventListener('input', async () => {
+        const query = input.value.trim(),
+          ticket = ++latest;
+        if (!query) {
+          results.innerHTML = '<p>Type to search every page.</p>';
+          return;
+        }
+        // Built after the site (npm run build), so the bundler must not try to resolve it.
+        const index = '/pagefind/pagefind.js';
+        pagefind ??= await import(/* @vite-ignore */ index);
+        const found = await Promise.all((await pagefind!.search(query)).results.slice(0, 8).map(r => r.data()));
+        if (ticket !== latest) return;
+        results.innerHTML = found.length
+          ? found
+              .map(r => `<a href="${r.url}"><strong>${r.meta.title ?? r.url}</strong><span>${r.excerpt}</span></a>`)
+              .join('')
+          : '<p>No results found.</p>';
+      });
+    </script>
+  </body>
+</html>

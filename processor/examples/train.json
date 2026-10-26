@@ -1,0 +1,4 @@
+{
+  "model": "yolo26s.pt", "data": "/path/to/data.yaml",
+  "epochs": 100, "imgsz": 640, "project": "runs", "name": "my-detector-v1"
+}

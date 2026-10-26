@@ -1,0 +1,45 @@
+# Secrets: camera credentials and relay settings
+.env
+.env.*
+!.env.example
+
+# Footage never belongs in git
+*.mp4
+*.dav
+
+# OS / Python
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+processor/build/
+
+# Model artifacts live in the private registry; credentials stay outside source control.
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+# Published models are the exception: each has its card and license beside it.
+!models/**/*.pt
+*.mlpackage/
+*.key
+
+# Worker
+node_modules/
+.wrangler/
+.astro/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+# Test copies of wrangler.jsonc without remote-only bindings (shared/test/fakeFootageStoreConfig.mjs)
+wrangler.test.json
+# wrangler.jsonc with your deployment's hosts and IDs (shared/deploy-config.mjs)
+wrangler.deploy.json
+# Personal notebooks; the shared one is processor/examples/train_detector.ipynb
+processor/notebooks/

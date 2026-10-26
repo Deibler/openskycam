@@ -1,0 +1,40 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: |
+            package/worker/package-lock.json
+            package/dashboard/package-lock.json
+            package/docs/package-lock.json
+      - name: Install dependencies from lockfiles
+        run: |
+          npm ci --prefix package/worker
+          npm ci --prefix package/dashboard
+          npm ci --prefix package/docs
+      - name: Install shell lint tool and Pillow for store thumbnails
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck python3-pil
+      # Wheels, at the versions requirements.txt pins: Ubuntu's OpenCV package pulls in about 200 packages and timed out.
+      - name: Install numpy and OpenCV for processor image tests
+        run: python3 -m pip install --user --break-system-packages numpy==2.4.3 opencv-python-headless==4.13.0.92
+      - name: Check application and relay
+        run: make check

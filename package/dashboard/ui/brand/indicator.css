@@ -1,0 +1,197 @@
+/* Adapted from HyperFrames svg-line-draw-loader; runs in native CSS.
+   Original SVG geometry stays fixed; only the ink's opacity and draw length change. */
+.brand-signal {
+  --signal-duration: 2.8s;
+  --signal-iterations: infinite;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  color: inherit;
+  vertical-align: middle;
+  pointer-events: none;
+}
+.brand-signal.brand-signal--player {
+  width: 56px;
+  height: 56px;
+}
+.brand-signal.brand-signal > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.brand-signal-base {
+  opacity: 0.2;
+}
+.brand-signal-ink > * {
+  animation-duration: var(--signal-duration);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-iteration-count: var(--signal-iterations);
+  animation-fill-mode: both;
+}
+.brand-signal--loading .brand-signal-ink > [pathLength] {
+  stroke-dasharray: 1;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-lens {
+  animation-name: signal-lens;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-uplink {
+  animation-name: signal-uplink;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-crosslink {
+  animation-name: signal-crosslink;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-downlink {
+  animation-name: signal-downlink;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-near-star {
+  animation-name: signal-near-star;
+}
+.brand-signal--loading .brand-signal-ink > .brand-signal-far-star {
+  animation-name: signal-far-star;
+}
+@keyframes signal-lens {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.3;
+  }
+  24%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  94%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes signal-uplink {
+  0%,
+  10% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  32%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  94%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes signal-crosslink {
+  0%,
+  27% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  49%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  94%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes signal-downlink {
+  0%,
+  44% {
+    stroke-dashoffset: -1;
+    opacity: 0;
+  }
+  66%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  94%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes signal-near-star {
+  0%,
+  22% {
+    opacity: 0.15;
+  }
+  34%,
+  72% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0.15;
+  }
+}
+@keyframes signal-far-star {
+  0%,
+  40% {
+    opacity: 0.15;
+  }
+  52%,
+  72% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0.15;
+  }
+}
+.brand-signal--live {
+  --signal-duration: 4.2s;
+}
+.brand-signal--live .brand-signal-ink > .brand-signal-near-star {
+  animation-name: signal-live-near;
+}
+.brand-signal--live .brand-signal-ink > .brand-signal-far-star {
+  animation-name: signal-live-far;
+}
+@keyframes signal-live-near {
+  0%,
+  30%,
+  70%,
+  100% {
+    opacity: 0.45;
+  }
+  48% {
+    opacity: 1;
+  }
+}
+@keyframes signal-live-far {
+  0%,
+  52%,
+  100% {
+    opacity: 0.45;
+  }
+  24% {
+    opacity: 1;
+  }
+}
+.brand-signal--idle {
+  opacity: 0.55;
+}
+.loading-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted-foreground);
+}
+[data-motion-paused] .brand-signal-ink > * {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-signal .brand-signal-ink > * {
+    animation: none !important;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
