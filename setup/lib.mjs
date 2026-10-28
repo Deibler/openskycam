@@ -99,6 +99,15 @@ export const problems = {
   address: v => (/^[A-Za-z0-9.:-]+$/.test(v) ? undefined : 'Enter the camera address, such as 192.168.1.20.'),
 };
 
+/**
+ * The camera stream URL, for the setup guide's stream check and external/relay/deploy.sh alike.
+ * The login is percent-encoded here, so .env holds it as the camera expects it (camera_mcp.py sends it as is).
+ */
+export function rtspUrl(env) {
+  const login = `${encodeURIComponent(env.CAMERA_USERNAME)}:${encodeURIComponent(env.CAMERA_PASSWORD)}`;
+  return `rtsp://${login}@${env.CAMERA_IP_ADDRESS}:${env.CAMERA_RTSP_PORT || 554}${env.CAMERA_RTSP_PATH || '/cam/realmonitor?channel=1&subtype=0'}`;
+}
+
 /** Text from a tool that was given `url`, without the URL or any user:password@ in it. */
 export function redactUrl(text, url) {
   return text.replaceAll(url, '<camera stream>').replace(/\/\/[^/@\s]*@/g, '//');

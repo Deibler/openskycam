@@ -497,7 +497,7 @@ const steps = [
         const streamPath = await ask('RTSP path', { initial: env.CAMERA_RTSP_PATH || '/cam/realmonitor?channel=1&subtype=0', problem: lib.problems.path, key: 'CAMERA_RTSP_PATH' });
         save({ CAMERA_IP_ADDRESS: ip, CAMERA_USERNAME: user, CAMERA_PASSWORD: password, CAMERA_RTSP_PORT: port, CAMERA_RTSP_PATH: streamPath });
         say(`Checking the stream from ${host}…`);
-        const url = `rtsp://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${ip}:${port}${streamPath}`;
+        const url = lib.rtspUrl(env);
         const probe = ssh(host, 'read -r url; timeout 20 ffprobe -v error -rtsp_transport tcp -select_streams v:0 -show_entries stream=codec_name,width,height -of csv=p=0 "$url"', url);
         const [codec, width, height] = probe.out.trim().split('\n').pop().split(',');
         if (probe.ok && ['hevc', 'h264'].includes(codec)) {

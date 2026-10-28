@@ -23,7 +23,7 @@ Copy `.env.example` to `.env`. Three programs read it: bash (`make deploy`, `mak
 | Key | Default | Used by | Meaning |
 |---|---|---|---|
 | `CAMERA_IP_ADDRESS` | none | relay, camera MCP | The camera's address |
-| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | none | relay, camera MCP | Camera credentials. They go into the RTSP URL unescaped, so they must not contain `@`, `:` or `/` |
+| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | none | relay, camera MCP | Camera credentials, written as they are. The relay percent-encodes them in the RTSP URL |
 | `CAMERA_RTSP_PORT` | `554` | relay | RTSP port |
 | `CAMERA_RTSP_PATH` | `/cam/realmonitor?channel=1&subtype=0` | relay | Stream path after the port. The default is the Dahua main stream |
 | `CAMERA_SCHEME` | `http` | camera MCP | `http` or `https`, for the camera's web API |
@@ -135,7 +135,7 @@ Fixed in code ([`package/worker/src/utils/configStorageUtil.ts`](https://github.
 | Key in `relay.env` | Value |
 |---|---|
 | `CAM_ID` | From `.env`, default `sky01` |
-| `CAMERA_RTSP_URL` | `rtsp://<user>:<password>@<address>:<port><path>` |
+| `CAMERA_RTSP_URL` | `rtsp://<user>:<password>@<address>:<port><path>`, with the user and password percent-encoded |
 | `LIVE_DIR` | `/dev/shm/skyvision` (RAM) |
 | `SPOOL_DIR` | `~/skyvision/spool` (disk), with `pending/` and `quarantine/` |
 | `INGEST_URL` | From `.env` |

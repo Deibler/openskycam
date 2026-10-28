@@ -13,8 +13,10 @@ set -a
 # shellcheck source=/dev/null
 . ../../.env
 set +a
-: "${INGEST_URL:?set INGEST_URL in .env}"
+: "${INGEST_URL:?set INGEST_URL in .env}" "${CAMERA_IP_ADDRESS:?set CAMERA_IP_ADDRESS in .env}" "${CAMERA_USERNAME?set CAMERA_USERNAME in .env}" "${CAMERA_PASSWORD?set CAMERA_PASSWORD in .env}"
 esc() { printf '%s' "$1" | sed 's/[\\"]/\\&/g'; }
+# The URL the setup guide's stream check opened: the same function percent-encodes the login.
+CAMERA_RTSP_URL=$(node --input-type=module -e "import { rtspUrl } from '../../setup/lib.mjs'; process.stdout.write(rtspUrl(process.env));")
 
 REMOTE_HOME=$(ssh "$HOST" 'mkdir -p ~/skyvision ~/.config/skyvision ~/.config/systemd/user && echo "$HOME"')
 scp -q record.sh upload.sh "$HOST":skyvision/
@@ -23,7 +25,7 @@ scp -q skyvision-record.service skyvision-upload.service "$HOST":.config/systemd
 # shellcheck disable=SC2087
 ssh "$HOST" 'chmod 755 ~/skyvision/*.sh; umask 077; cat > ~/.config/skyvision/relay.env' <<EOF
 CAM_ID=${CAM_ID:-sky01}
-CAMERA_RTSP_URL="$(esc "rtsp://$CAMERA_USERNAME:$CAMERA_PASSWORD@$CAMERA_IP_ADDRESS:${CAMERA_RTSP_PORT:-554}${CAMERA_RTSP_PATH:-/cam/realmonitor?channel=1&subtype=0}")"
+CAMERA_RTSP_URL="$(esc "$CAMERA_RTSP_URL")"
 LIVE_DIR=/dev/shm/skyvision
 SPOOL_DIR=$REMOTE_HOME/skyvision/spool
 INGEST_URL=$INGEST_URL

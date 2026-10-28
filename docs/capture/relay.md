@@ -32,7 +32,7 @@ make deploy HOST=<relay-host>
 | `.env` value | Default | Used for |
 |---|---|---|
 | `CAMERA_IP_ADDRESS` | | Camera host in the RTSP URL |
-| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | | Camera login in the RTSP URL. They are inserted as written, so percent-encode `@`, `:` and `/`. |
+| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | | Camera login in the RTSP URL. Write them as they are; `deploy.sh` percent-encodes them. |
 | `CAMERA_RTSP_PORT` | `554` | RTSP port |
 | `CAMERA_RTSP_PATH` | `/cam/realmonitor?channel=1&subtype=0` | Stream path. The default is a Dahua main stream; Hikvision uses `/Streaming/Channels/101`, TP-Link Tapo `/stream1`. Quote it in `.env` because it contains `&`. |
 | `CAM_ID` | `sky01` | Camera ID in file names and object keys. It must be in the Workers' `CAMERAS` list. |

@@ -64,6 +64,15 @@ test('team domains are normalized, and bad input is reported', () => {
   assert.ok(lib.problems.folder('footage'));
 });
 
+test('the camera stream URL percent-encodes the login that .env holds as written', () => {
+  const env = { CAMERA_IP_ADDRESS: '192.168.1.20', CAMERA_USERNAME: 'ad:min', CAMERA_PASSWORD: 'p@ss/w?rd%41' };
+  assert.equal(lib.rtspUrl(env), 'rtsp://ad%3Amin:p%40ss%2Fw%3Frd%2541@192.168.1.20:554/cam/realmonitor?channel=1&subtype=0');
+  assert.equal(
+    lib.rtspUrl({ ...env, CAMERA_RTSP_PORT: '8554', CAMERA_RTSP_PATH: '/stream1' }),
+    'rtsp://ad%3Amin:p%40ss%2Fw%3Frd%2541@192.168.1.20:8554/stream1',
+  );
+});
+
 test('camera stream URLs and their passwords are removed from error text', () => {
   const url = 'rtsp://admin:s3cret%40x@192.168.1.20:554/stream1';
   assert.equal(lib.redactUrl(`${url}: Connection refused`, url), '<camera stream>: Connection refused');
