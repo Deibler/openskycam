@@ -23,7 +23,7 @@ Copy `.env.example` to `.env`. Three programs read it: bash (`make deploy`, `mak
 | Key | Default | Used by | Meaning |
 |---|---|---|---|
 | `CAMERA_IP_ADDRESS` | none | relay, camera MCP | The camera's address |
-| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | none | relay, camera MCP | Camera credentials. They go into the RTSP URL unescaped, so they must not contain `@`, `:` or `/` |
+| `CAMERA_USERNAME`, `CAMERA_PASSWORD` | none | relay, camera MCP | Camera credentials. They are inserted into the RTSP URL as written, so percent-encode `@`, `:` and `/` in them ([Camera and relay](capture/relay.md)) |
 | `CAMERA_RTSP_PORT` | `554` | relay | RTSP port |
 | `CAMERA_RTSP_PATH` | `/cam/realmonitor?channel=1&subtype=0` | relay | Stream path after the port. The default is the Dahua main stream |
 | `CAMERA_SCHEME` | `http` | camera MCP | `http` or `https`, for the camera's web API |
