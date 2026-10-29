@@ -42,6 +42,8 @@ elif sys.platform.startswith('linux'):
     def quote(value, expand=True):  # systemd unit quoting; ExecStart= also expands $
         value = value.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')
         return '"' + (value.replace('$', '$$') if expand else value) + '"'
+    def unit_path(value):  # systemd never strips quotes from WorkingDirectory=, so write it raw
+        return value.replace('%', '%%')
     folder = Path.home() / '.config/systemd/user'
     folder.mkdir(parents=True, exist_ok=True)
     name = 'skyvision-models-' + device
@@ -49,7 +51,7 @@ elif sys.platform.startswith('linux'):
     files = {
         folder / (name + '.service'): '\n'.join([
             '[Unit]', f'Description=SkyVision model sync ({device})', '',
-            '[Service]', 'Type=oneshot', 'WorkingDirectory=' + quote(source, False),
+            '[Service]', 'Type=oneshot', 'WorkingDirectory=' + unit_path(source),
             'Environment=PYTHONUNBUFFERED=1', 'Environment=PYTHONDONTWRITEBYTECODE=1',
             'ExecStart=' + ' '.join(quote(a) for a in arguments),
             'Nice=10', 'IOSchedulingClass=idle', 'StandardOutput=null', 'StandardError=null', '']).encode(),

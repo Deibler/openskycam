@@ -58,7 +58,8 @@ class LinuxUnits(unittest.TestCase):
         text = unit.read_text()
         self.assertIn('ExecStart="/opt/my env/bin/python" "-m" "skyvision_processor" "workshop-run" "--base-url" '
                       f'"https://api.example.com" "--key-file" "{self.key}" "--runtime" "workshop-{"a" * 32}" "--watch"', text)
-        self.assertIn('WorkingDirectory="/src 100%%"', text)
+        self.assertIn('WorkingDirectory=/src 100%%\n', text)
+        self.assertNotIn('WorkingDirectory="', text)
         self.assertIn('Environment="PYTHONPATH=/src 100%%:/deps"', text)
         for line in ('Restart=always', 'Nice=10', 'WantedBy=default.target', 'Environment="PYTHONUNBUFFERED=1"'):
             self.assertIn(line + '\n', text)
@@ -80,6 +81,8 @@ class LinuxUnits(unittest.TestCase):
         self.assertIn('OnUnitActiveSec=60\n', timer.read_text())
         service = timer.with_suffix('.service').read_text()
         self.assertIn('Type=oneshot\n', service)
+        self.assertIn('WorkingDirectory=/src\n', service)
+        self.assertNotIn('WorkingDirectory="', service)
         self.assertIn('"sync-models" "--base-url" "https://api.example.com" "--key-file"', service)
         self.assertNotEqual(0, install('install-model-sync.sh', '/py', 'Bad Device', str(self.key), 'https://x', '/m', '/s',
                                        home=self.home).returncode)
