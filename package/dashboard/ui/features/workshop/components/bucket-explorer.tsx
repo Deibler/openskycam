@@ -24,6 +24,7 @@ export function BucketExplorer({
   initialRun = '',
   onItem,
   onEditState,
+  onLeave = action => action(),
 }: {
   bucketId: string;
   title?: string;
@@ -31,6 +32,8 @@ export function BucketExplorer({
   initialRun?: string;
   onItem?: (id: string, visit?: boolean) => void;
   onEditState?: (dirty: boolean, busy: boolean) => void;
+  /** Runs `action` now, or after the person agrees to drop unsaved marks. */
+  onLeave?: (action: () => void) => void;
 }) {
   const [preferences, setPreferences] = useState<BrowserPreferences>(() => {
     const saved = readBrowserPreferences(bucketId);
@@ -219,7 +222,7 @@ export function BucketExplorer({
             focused.current = id;
             onItem?.(id);
           }}
-          onBack={close}
+          onBack={() => onLeave(close)}
           onEditState={onEditState}
         />
       )}

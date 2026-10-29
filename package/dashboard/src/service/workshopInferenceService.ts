@@ -89,7 +89,8 @@ export async function runtimeStatus(env: Env) {
   };
 }
 export async function registerRuntime(env: Env, body: JsonObject) {
-  if (!hash(body.code_sha256) || !identifier(body.device_id) || !(await models.findDevice(env, body.device_id)))
+  // Any registered device ID will do; device IDs may contain dots, which workflow identifiers may not.
+  if (!hash(body.code_sha256) || typeof body.device_id !== 'string' || !(await models.findDevice(env, body.device_id)))
     invalid('Register a device and provide the processor code SHA-256.');
   const manifest = {
     schema_version: 1,

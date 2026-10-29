@@ -76,7 +76,7 @@ async function setup(
   } = {},
 ) {
   const suffix = crypto.randomUUID(),
-    device = 'device-' + suffix;
+    device = 'device.' + suffix; // a dot, which device IDs allow
   await web('/api/models/devices', { id: device });
   const runtimeResponse = await web('/api/workshop/runtimes', {
     device_id: device,
@@ -317,6 +317,11 @@ describe('bucket detection library', () => {
       'review=wrong',
     ])
       expect((await web(`/api/workshop/buckets/${s.bucket}/browse?${params}`)).status).toBe(400);
+    // A frame full of stars has more labels than the filter's top value, 100, which means 100 or more.
+    await env.CATALOG.prepare('UPDATE workshop_items SET annotation_json=? WHERE id=?')
+      .bind(JSON.stringify(Array(120).fill(label)), original.id)
+      .run();
+    expect((await browse('min_objects=100')).items.map(i => i.id)).toEqual([original.id]);
     const detail = await (await web(`/api/workshop/items/${original.id}`)).json<
       import('../src/models/bucketBrowseInferencemodel').BucketItemDetail
     >();
@@ -1373,6 +1378,13 @@ describe('Workshop saved state and execution', () => {
     const [first, second] = review.items,
       label = JSON.parse(first.annotation_json)[0];
     const decide = (id: string, body: unknown) => web(`/api/workshop/items/${id}/review`, body, 'PUT');
+    // A busy frame: as many labels as the service takes, as the website sends them, fit the body limit.
+    const busy = Array.from({ length: 100 }, () => ({
+      ...label,
+      model_node: 'n2',
+      track_id: 'track-' + '0'.repeat(32),
+    }));
+    expect((await decide(first.id, { review: 'pending', annotations: busy })).status).toBe(200);
     // Relabel within the model's classes only, with a real box.
     expect(
       (await decide(first.id, { review: 'accepted', annotations: [{ ...label, class_name: 'Cat' }] })).status,
@@ -1428,8 +1440,8 @@ describe('Workshop schedules', () => {
   // Footage is seeded on yesterday's UTC date; the scheduler runs at chosen times the next day.
   const day = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const at = (time: string) => new Date(Date.parse(`${day}T${time}Z`) + 86400000);
-  async function clip(time: string) {
-    const start = new Date(`${day}T${time}Z`);
+  async function clip(time: string, date = day) {
+    const start = new Date(`${date}T${time}Z`);
     await seedSegment({ start });
     await env.CATALOG.prepare('UPDATE segments SET sha256=? WHERE start=?').bind(sourceHash, start.toISOString()).run();
   }
@@ -1461,6 +1473,7 @@ describe('Workshop schedules', () => {
       w.edges.push({ id: 'e9', source: 'n9', target: 'n0', sourceHandle: 'out', targetHandle: 'in' });
     });
     expect(response.status, await response.clone().text()).toBe(200);
+    await s.revoke(); // the runtime has checked in; schedules never use the key
     return s.request.workflow_id;
   }
   const runs = async (workflow: string) =>
@@ -1509,8 +1522,9 @@ describe('Workshop schedules', () => {
     });
   });
   it('runs new footage once per quarter hour and only on recordings uploaded since', async () => {
-    await clip('04:00:00');
-    const flow = await scheduled({ trigger: 'arrival' }, { day: 'previous-day', from: '04:00:00', until: '04:10:00' });
+    const today = at('00:00:00').toISOString().slice(0, 10);
+    await clip('04:00:00', today);
+    const flow = await scheduled({ trigger: 'arrival' }, { day: 'run-day', from: '04:00:00', until: '04:10:00' });
     await runSchedules(env, at('04:15:00'));
     await runSchedules(env, at('04:16:00'));
     expect(await runs(flow)).toEqual([
@@ -1518,7 +1532,7 @@ describe('Workshop schedules', () => {
     ]);
     await runSchedules(env, at('04:30:00'));
     expect(await outcome(flow)).toMatchObject({ status: 'skipped', message: 'Nothing new to process.' });
-    await clip('04:02:00');
+    await clip('04:02:00', today);
     await runSchedules(env, at('04:45:00'));
     const all = await runs(flow);
     expect(all.map(r => r.jobs)).toEqual([1, 1]);
@@ -1527,7 +1541,29 @@ describe('Workshop schedules', () => {
         .bind(all[1].id)
         .all<{ input_json: string }>()
     ).results;
-    expect(JSON.parse(input.input_json).recording.start).toBe(`${day}T04:02:00.000Z`);
+    expect(JSON.parse(input.input_json).recording.start).toBe(`${today}T04:02:00.000Z`);
+  });
+  it('refuses new-footage schedules that would miss uploads at midnight', async () => {
+    const flow = await scheduled({ trigger: 'arrival' }, { day: 'previous-day', from: '04:00:00', until: '04:10:00' });
+    await runSchedules(env, at('04:15:00'));
+    expect((await outcome(flow))?.message).toContain('Choose Day of each run');
+    await patch(flow, w => Object.assign(w.nodes[1].data, { day: 'run-day', from: '23:00:00', until: '23:50:00' }));
+    await runSchedules(env, at('04:30:00'));
+    expect((await outcome(flow))?.message).toBe(
+      "End the window by 23:35 UTC so its last clips upload before the day's final new-footage check.",
+    );
+  });
+  it('processes the day of a set-time slot that started late, after midnight', async () => {
+    const before = new Date(Date.parse(day) - 86400000).toISOString().slice(0, 10);
+    await clip('06:00:00', before);
+    await clip('06:00:00');
+    const flow = await scheduled({ at: '23:50' }, { day: 'previous-day', from: '06:00:00', until: '06:05:00' });
+    await runSchedules(env, at('00:20:00')); // yesterday's 23:50 slot, half an hour late
+    const [run] = await runs(flow);
+    const input = await env.CATALOG.prepare('SELECT input_json FROM workshop_jobs WHERE run_id=?')
+      .bind(run.id)
+      .first<{ input_json: string }>();
+    expect(JSON.parse(input!.input_json).recording.start).toBe(`${before}T06:00:00.000Z`);
   });
   it('follows another workflow only when its finished run saved images', async () => {
     await clip('05:00:00');
@@ -1691,6 +1727,22 @@ describe('Workshop tracks', () => {
     plain.nodes[1].data.pick = 'brightest';
     const unknown = await web('/api/workshop', { revision: s.request.revision + 1, document: s.state.document }, 'PUT');
     expect(unknown.status).toBe(400);
+    await s.revoke();
+  });
+
+  it('keeps a minute of frames that each carry a long track', async () => {
+    // A fixed light seen all minute rides, with its whole path, in every frame: 1.7 MB of results.
+    const s = await setup({ interval: 5 }),
+      { job } = await (await s.claim()).json<{ job: WorkshopJob }>();
+    const path = Array.from({ length: 4000 }, (_, i) => [i * 0.015, 0.2, 0.3, 0.002, 0.004, 0, 0.5]);
+    const light = { ...track(job.id, { motion: 'stationary', speed: 0, end: 59.985, detections: 4000, path }) };
+    delete (light as { scan?: unknown }).scan;
+    const body = tracked(await commit(s, job, 12, false), job.id, light);
+    expect(JSON.stringify(body).length).toBeGreaterThan(1_500_000);
+    const response = await api(s.token, `/jobs/${job.id}/complete`, body);
+    expect(response.status, await response.clone().text()).toBe(200);
+    const { items } = await (await web('/api/workshop/buckets/' + s.bucket)).json<{ items: WorkshopItem[] }>();
+    expect(items.filter(i => i.job_id === job.id)).toHaveLength(12);
     await s.revoke();
   });
 

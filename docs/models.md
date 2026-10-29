@@ -3,7 +3,7 @@ title: Models
 description: The model registry, how to publish a trained model, and how devices and Workshop runs use it.
 ---
 
-The model registry stores every model version you publish: its weights and a model card that describes classes, task, input and evaluations. Versions are immutable. Workshop runs pin the exact checkpoint they use. A new deployment starts with an empty registry: openskycam ships no weights, so publish your own.
+The model registry stores every model version you publish: its weights and a model card that describes classes, task, input and evaluations. Versions are immutable. Workshop runs pin the exact checkpoint they use. A new deployment starts with an empty registry: publish your own model, or the night detector in `models/night-detector` ([below](#publish-the-night-detector)).
 
 Model files live in the private `skyvision-models` R2 bucket, separate from footage retention, so they are never pruned. D1 holds the model cards, the artifact index, device assignments and device status.
 

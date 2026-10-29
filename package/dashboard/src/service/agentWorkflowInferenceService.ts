@@ -180,6 +180,10 @@ async function remove(app: MachineApp, args: JsonObject, kind: 'workflow' | 'buc
 }
 
 async function saveWorkflow(app: MachineApp, s: WorkshopState, workflow: Workflow) {
+  // Refuse before saving: a scheduled workflow runs from the cron, which never sees this key.
+  const input = workflow.nodes.find(n => n.data.kind === 'input');
+  if (input?.data.bucketId === 'camera-archive' && input.data.camera)
+    requireApiCamera(app.principal, String(input.data.camera));
   place(workflow.nodes, workflow.edges);
   const others = s.document.workflows.filter(w => w.id !== workflow.id);
   const saved = await saveWorkshop(app.env, {

@@ -59,11 +59,13 @@ while true; do
       for g in "${live[@]}"; do [[ -e $g ]] && mv "$g" "$PENDING/"; done
     fi
   fi
-  # Never fill the disk; other services on this Pi need it. Oldest backlog goes first.
+  # Never fill the disk; other services on this Pi need it. Files set aside go first, then the oldest backlog:
+  # a rejection that repeats every minute would otherwise fill the disk with quarantine and stop the recorder.
   while (( $(df --output=avail -k "$PENDING" | tail -1) < MIN_FREE_GB * 1048576 )); do
-    backlog=("$PENDING"/*.mp4)
+    backlog=("$BAD"/*.mp4)
+    (( ${#backlog[@]} )) || backlog=("$PENDING"/*.mp4)
     (( ${#backlog[@]} )) || break
-    echo "disk low, dropped oldest backlog: ${backlog[0]##*/}"; rm -f "${backlog[0]}"
+    echo "disk low, dropped oldest ${backlog[0]#"$SPOOL_DIR"/}"; rm -f "${backlog[0]}"
   done
   sleep "$pause"
 done

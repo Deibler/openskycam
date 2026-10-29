@@ -15,7 +15,7 @@ def thumbnail(data: bytes, size: int, crop: tuple[int, int, int, int] | None) ->
     image.draft('RGB', (round(width * scale), round(height * scale)))
     k = image.size[0] / width
     region = image.crop((round(left * k), round(top * k), round((left + w) * k), round((top + h) * k)))
-    region = region.convert('RGB').resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
+    region = region.convert('RGB').resize((max(1, round(w * scale)), max(1, round(h * scale))), getattr(Image, 'Resampling', Image).LANCZOS)  # Resampling is Pillow 9.1+; Ubuntu 22.04 has 9.0
     out = io.BytesIO()
     region.save(out, 'JPEG', quality=75)
     return out.getvalue()

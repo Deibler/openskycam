@@ -108,6 +108,7 @@ export function BucketWorkspace({
               itemId={itemId}
               onItem={onItem}
               onEditState={onEditState}
+              onLeave={onLeave}
             />
           )}
         </TabsContent>

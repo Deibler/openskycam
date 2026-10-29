@@ -24,11 +24,11 @@ Files are written to `/dev/shm/skyvision/`, a RAM disk, so the relay's SD card s
 
 | Failure | What happens |
 |---|---|
-| Worker unreachable, or answers `401`, `403`, `404`, `408`, `429` or `5xx` | The file is kept and retried after 10 s. Finished files move from RAM to `~/skyvision/spool/pending/` on disk and upload oldest first when the Worker is back. |
+| Worker unreachable, or answers `401`, `403` (wrong token, or a camera missing from `CAMERAS`), `404`, `408`, `429` or `5xx` | The file is kept and retried after 10 s. Finished files move from RAM to `~/skyvision/spool/pending/` on disk and upload oldest first when the Worker is back. |
 | More than 3 finished files in RAM | The extras move to `spool/pending/`, so a full RAM disk never stops the recorder. |
 | `ffprobe` cannot read the file | It moves to `spool/quarantine/` and is never retried. |
 | Any other answer, such as `409` or `422` | Same: quarantined for inspection. |
-| Relay disk below `MIN_FREE_GB` (default 20) | The oldest pending file is deleted, one at a time, until there is room. |
+| Relay disk below `MIN_FREE_GB` (default 20) | Quarantined files are deleted first, then the oldest pending file, one at a time, until there is room. |
 
 ### 3. The ingest Worker checks and names it
 

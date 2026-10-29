@@ -26,4 +26,4 @@ Goal: a workflow that samples a footage window, detects objects, keeps the frame
 6. **Run.** `runs start`, then loop `runs watch` until finished. Report progress to the user as it moves.
 7. **Verify** (skill `verify-changes`): `runs status` shows `completed` with no `errors`, and `images search` with the `run_id` returns the saved frames.
 
-To run it automatically, add a schedule step linked into the input (guide `workflows`, Schedules). Use `run-day` or `previous-day` as the footage day.
+To run it automatically, add a schedule step linked into the input (guide `workflows`, Schedules). Use `run-day` or `previous-day` as the footage day; When new footage arrives (`arrival`) needs `run-day` and a window that ends by 23:35 UTC.

@@ -70,6 +70,7 @@ def sync_models(client: Client, device: str, root: Path) -> SyncResult:
         active = ops.read_active(root)
         current = active['deployment'] if active else None
         keep = {m['artifact']['sha256'] for m in current['models']} if current else set()
+        verified = set()  # checkpoints on disk that match their checksum
         desired = None
         try:
             desired = ops.get_desired(client, device)
@@ -86,6 +87,7 @@ def sync_models(client: Client, device: str, root: Path) -> SyncResult:
                 valid = path.exists() and path.stat().st_size == artifact['bytes'] and file_hash(path) == artifact['sha256']
                 if not valid:
                     ops.download_artifact(client, artifact, path); changed = True
+                verified.add(artifact['sha256'])
                 if changed:
                     smoke_model(path, binding)
             if (ops.get_desired(client, device) or {}).get('revision') != desired['revision']:
@@ -100,8 +102,9 @@ def sync_models(client: Client, device: str, root: Path) -> SyncResult:
             keep = {m['artifact']['sha256'] for m in desired['models']}
             ops.prune(root, keep)
         except Exception:
-            # A failed candidate is disposable; the active version and parameters survive.
-            ops.prune(root, keep)
+            # A failed candidate is disposable; the active version and parameters survive. Checkpoints that
+            # matched their checksum stay, so a sync that keeps failing does not download them every minute.
+            ops.prune(root, keep | verified)
             try: ops.report(client, device, desired['revision'] if desired else None, current['revision'] if current else None, 'error', 'model-sync-failed')
             except Exception: pass
             raise

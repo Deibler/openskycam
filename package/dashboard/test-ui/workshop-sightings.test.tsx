@@ -255,6 +255,26 @@ const openBucket = async (itemId = '', onItem = vi.fn()) => {
   );
   return screen.findByRole('button', { name: /^Plane, .*, 2 photos$/ });
 };
+it('asks before Back from a bucket feed drops marks that are not saved yet', async () => {
+  const onLeave = vi.fn();
+  render(
+    <TooltipProvider>
+      <BucketExplorer bucketId="planes" title="Night planes" initialRun="run" onItem={vi.fn()} onLeave={onLeave} />
+    </TooltipProvider>,
+  );
+  const sighting = await screen.findByRole('button', { name: /^Plane, .*, 2 photos$/ });
+  await act(async () => {
+    fireEvent.click(sighting);
+  });
+  await screen.findByRole('article', { name: /Sighting 1 of 2/ });
+  await key('2'); // Meteorite, staged until Enter
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Back to bucket' }));
+  });
+  expect(onLeave).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('article', { name: /Sighting 1 of 2/ })).toBeTruthy();
+  expect(puts).toEqual([]);
+});
 const tile = (photos: 1 | 2) =>
   screen.getByRole('button', { name: new RegExp(`^Plane, .*, ${photos} ${photos === 1 ? 'photo' : 'photos'}`) });
 const feedCard = (n: number) => screen.getByRole('article', { name: `Sighting ${n} of 2: Plane` });
@@ -486,6 +506,43 @@ const openReviewer = async (onItem = vi.fn()) => {
 };
 const sighting = (n: number) => screen.getByRole('article', { name: `Sighting ${n} of 2: Plane` });
 const reviews = () => puts.map(p => [p.id, p.body.review]).sort();
+
+// jsdom's :focus-visible does not follow how the focus came; a browser's matches only keyboard focus.
+const focusVisible = (visible: boolean) => {
+  const matches = HTMLElement.prototype.matches;
+  vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (this: HTMLElement, selector: string) {
+    return selector === ':focus-visible' ? visible && this === document.activeElement : matches.call(this, selector);
+  });
+};
+it('leaves Enter and Space on a button reached from the keyboard to that button', async () => {
+  const first = await openReviewer();
+  const none = within(first).getByRole('button', { name: /None/ });
+  none.focus();
+  focusVisible(true); // as a browser reports a button reached with Tab
+  for (const key of ['Enter', ' '])
+    await act(async () => {
+      fireEvent.keyDown(none, { key });
+    });
+  expect(reviews()).toEqual([]);
+});
+
+it('keeps Enter as Confirm when a click left focus on a button', async () => {
+  const first = await openReviewer();
+  const confirm = within(first).getByRole('button', { name: 'Confirm' });
+  focusVisible(false); // a browser keeps focus on a clicked button, but not :focus-visible
+  confirm.focus();
+  await act(async () => {
+    fireEvent.click(confirm);
+  });
+  await act(async () => {
+    fireEvent.keyDown(confirm, { key: 'Enter' });
+  });
+  expect(reviews()).toEqual([
+    ['a', 'accepted'],
+    ['b', 'accepted'],
+    ['c', 'accepted'],
+  ]);
+});
 
 it('plays the sighting first, and Confirm decides all its photos, moves on, and can be undone', async () => {
   const onItem = vi.fn();

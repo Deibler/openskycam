@@ -151,7 +151,7 @@ A full run's frames are bucket items, at `GET /v1/workshop/items/{id}/image`. A 
 | `GET /v1/workshop/items/{id}` | One image with its `recording`, `run` (`id`, `name`, `created_at`) and the model's `classes` |
 | `GET /v1/workshop/items/{id}/thumbnail` | A small JPEG: `size=256` (default) or `512`, `mode=frame` (default) or `object` to crop to the detections. Supports `If-None-Match`. |
 
-`browse` filters: `run`, `camera`, `class`, `review` (`pending`, `accepted` or `rejected`), `saved=true`, `q` (text, up to 200 characters), `from` and `to` (capture time), `min_confidence` and `max_confidence` (0 to 1), `min_objects` and `max_objects` (0 to 100), `sort` (`newest` or `oldest`), `limit` (1 to 200, default 120) and `cursor` from the previous page.
+`browse` filters: `run`, `camera`, `class`, `review` (`pending`, `accepted` or `rejected`), `saved=true`, `q` (text, up to 200 characters), `from` and `to` (capture time), `min_confidence` and `max_confidence` (0 to 1), `min_objects` and `max_objects` (0 to 100; `max_objects=100`, the default, means 100 or more), `sort` (`newest` or `oldest`), `limit` (1 to 200, default 120) and `cursor` from the previous page.
 
 ### Review an image
 
@@ -175,7 +175,7 @@ PUT /v1/workshop/items/{id}/review
 | `confidence` | 0 to 1 |
 | `box` | Detection models only: `[left, top, right, bottom]` as fractions of the frame, left below right and top below bottom |
 
-At most 100 labels, and the request body is limited to 4,096 bytes. A label that differs from the model's is marked `edited`. A corrected box keeps the `track_id` of the model box it matches or overlaps by more than half, so trajectories survive review. The answer echoes `review`, and `annotations` when sent.
+At most 100 labels, and the request body is limited to 65,536 bytes. A label that differs from the model's is marked `edited`. A corrected box keeps the `track_id` of the model box it matches or overlaps by more than half, so trajectories survive review. The answer echoes `review`, and `annotations` when sent.
 
 ### Keep an image
 

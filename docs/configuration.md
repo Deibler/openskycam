@@ -27,7 +27,7 @@ Copy `.env.example` to `.env`. Three programs read it: bash (`make deploy`, `mak
 | `CAMERA_RTSP_PORT` | `554` | relay | RTSP port |
 | `CAMERA_RTSP_PATH` | `/cam/realmonitor?channel=1&subtype=0` | relay | Stream path after the port. The default is the Dahua main stream |
 | `CAMERA_SCHEME` | `http` | camera MCP | `http` or `https`, for the camera's web API |
-| `CAMERA_PORT` | none | camera MCP | The camera's web API port |
+| `CAMERA_PORT` | `80`, or `443` with `https` | camera MCP | The camera's web API port |
 
 ### Relay
 
@@ -55,7 +55,7 @@ Variables already set in the environment win over `.env`. In Workers Builds, set
 
 ### Guided setup
 
-[`npm run setup`](deploy.md#guided-setup) writes every key above and these, which only it reads. They let it check and redo steps later.
+[`npm run setup`](deploy.md#guided-setup) writes every key above except `CAMERA_SCHEME`, `CAMERA_PORT`, `MIN_FREE_GB` and `DOCS_HOST`, which keep their defaults, and these, which only it reads. They let it check and redo steps later.
 
 | Key | Meaning |
 |---|---|
@@ -209,4 +209,4 @@ The installers take absolute paths and install a service that survives reboots:
 | `install-workshop.sh` | launchd agent `org.openskycam.workshop`, `Nice` 10 | systemd user service `skyvision-workshop`, `Restart=always`, `Nice=10` |
 | `install-model-sync.sh` | launchd agent `org.openskycam.models.<device>`, every 60 s | systemd user timer `skyvision-models-<device>.timer`, every 60 s |
 
-Both installers check their arguments before writing anything. The runtime ID must look like `workshop-` followed by 32 hex characters, the origin must be HTTPS, and the key file must be mode 600. `install-model-sync.sh` runs one sync first, to prove the interpreter, key and assignment work. The optional dependency directory is added to `PYTHONPATH`. On Linux, run `loginctl enable-linger $USER` once so the services keep running after you log out.
+Both installers check their arguments before writing anything. The runtime ID must look like `workshop-` followed by 32 hex characters, the origin must be HTTPS with no path, and the key file must be mode 600. `install-workshop.sh` also checks that the Python imports `av`, `cv2`, `torch` and `ultralytics`. `install-model-sync.sh` runs one sync first, to prove the interpreter, key and assignment work. The optional dependency directory is added to `PYTHONPATH`. On Linux, each installer stops with an error if systemd cannot load the unit it wrote. Run `loginctl enable-linger $USER` once so the services keep running after you log out.

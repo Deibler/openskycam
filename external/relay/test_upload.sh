@@ -23,11 +23,12 @@ has "$SPOOL_DIR/pending" 20260101T000200Z    || fail "finished segment not parke
 has "$LIVE_DIR" 20260101T000300Z             || fail "newest segment (still being written) was touched"
 [[ $(find "$LIVE_DIR" -name '*.mp4' | wc -l) == 1 ]] || fail "unexpected files left in RAM"
 
-# 2) Disk guard: with the floor above free space, the backlog is dropped oldest first.
+# 2) Disk guard: with the floor above free space, set-aside files go first, then the backlog oldest first.
 MIN_FREE_GB=1000000 timeout 6 bash "$here/upload.sh" > "$T/log" 2>&1 || true
-[[ -z $(find "$SPOOL_DIR/pending" -name '*.mp4') ]] || fail "disk guard left backlog"
-grep -o 'dropped oldest backlog: [^ ]*' "$T/log" | head -2 | tr '\n' ' ' \
-  | grep -q '000100Z.mp4 .*000200Z.mp4' || fail "backlog not dropped oldest first"
+[[ -z $(find "$SPOOL_DIR/pending" "$SPOOL_DIR/quarantine" -name '*.mp4') ]] || fail "disk guard left backlog"
+grep -o 'dropped oldest [^ ]*' "$T/log" | head -3 | tr '\n' ' ' \
+  | grep -q 'quarantine/sky01_20260101T000000Z.mp4 .*pending/sky01_20260101T000100Z.mp4 .*000200Z.mp4' \
+  || fail "quarantine and backlog not dropped in order"
 has "$LIVE_DIR" 20260101T000300Z || fail "disk guard touched the segment being written"
 
 # 3) A Worker that takes uploads but slower than the camera records: RAM keeps only the next few

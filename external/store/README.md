@@ -5,7 +5,7 @@ machine with Python 3, `cloudflared` and a large drive. Cloudflare Workers reach
 [Workers VPC service](https://developers.cloudflare.com/workers-vpc/): the `STORE` binding in both
 Workers. It has no public hostname and listens only on `127.0.0.1:8096`.
 
-Files keep the keys the Workers used in R2, under the footage root you choose:
+Files are stored under the object keys the Workers use, below the footage root you choose:
 
 ```
 <footage-root>/raw/cam=sky01/date=2026-09-22/hour=14/sky01_20260922T140500Z.mp4
@@ -23,8 +23,8 @@ Every request needs `Authorization: Bearer <store token>`.
 | `POST /thumbnail?size=<px>[&left=&top=&width=&height=]` with a sized JPEG body | `200` a JPEG: the crop (pixels) fit to `size`×`size`, or the whole image only shrunk · `400` bad size or crop · `413` over 32 MB · `422` not an image · `503` Pillow missing |
 
 Thumbnails are for Workshop images and agent previews, so the website needs no paid image service.
-They use Pillow in the host's `python3` (`python3 -m pip install --user pillow`, or your distribution's
-`python3-pil` package), imported on first use, so footage never depends on it. On macOS the deploy prefers
+They use Pillow in the host's `python3` (your distribution's `python3-pil` package, or `brew install pillow`
+on macOS), imported on first use, so footage never depends on it. On macOS the deploy prefers
 Homebrew's `python3`.
 
 A file appears at its key only once it is complete, synced to disk and matches its SHA-256, and an

@@ -6,7 +6,7 @@ description: An AI agent can set openskycam up, run it day to day and change its
 
 openskycam is built so an AI agent can do the work. Every action on the website is also an API call under `/v1`. An [MCP server](api/mcp.md) gives agents seven tools that cover the website, with guides that teach them how to use them. The setup runs unattended from `.env`, and `make check` verifies any change an agent makes to the code.
 
-A person is needed for three things, all by design: creating API keys on the website, creating the tunnel and the sign-in application in the Cloudflare dashboard, and the first Cloudflare login in a browser. [What needs you](#what-needs-you) lists them.
+A person is needed for three things, all by design: creating API keys on the website, creating the tunnel, the sign-in application and the Browser Integrity Check rule in the Cloudflare dashboard, and the first Cloudflare login in a browser. [What needs you](#what-needs-you) lists them.
 
 ## What you can ask
 

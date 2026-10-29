@@ -58,7 +58,7 @@ Endpoints that read footage or images check the camera of what they return; a ke
 
 Some answers contain download links that work without the bearer header, so they can be passed to `curl` or a browser: video, full-size images, photos and dataset manifests from the MCP server. A link is `https://<api-host><path>?key=<key id>&expires=<unix seconds>&sig=<HMAC>`:
 
-- It is valid for one path, for `GET` and `HEAD` only, and with exactly those three query parameters.
+- It is valid for one path, for `GET` (and `HEAD` on a video file) only, and with exactly those three query parameters.
 - It lasts one hour, or until the key expires if that is sooner.
 - It is signed with the key's secret hash, so revoking or rotating the key ends every link it made.
 
@@ -128,7 +128,9 @@ Workshop is one document with a revision number. Every write that changes it tak
 | Most JSON bodies | 4,096 bytes |
 | `PUT /v1/workshop` | 800,000 bytes; the saved document must stay under 750,000 bytes |
 | `POST /v1/mcp` | 1,000,000 bytes |
-| `POST /v1/models` | 65,536 bytes |
+| `POST /v1/workshop/jobs/{id}/complete` | 8 MiB |
+| `POST /v1/workshop/jobs/{id}/progress` | 1 MiB |
+| `POST /v1/models`, `PUT /v1/workshop/items/{id}/review` | 65,536 bytes |
 | `PUT /v1/models/devices/{id}/deployment`, `POST /v1/models/artifacts` | 32,768 bytes |
 | `PUT /v1/models/chunks/{sha}`, `PUT /v1/workshop/jobs/{id}/images/{sha}` | 8 MiB |
 

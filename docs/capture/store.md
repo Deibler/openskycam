@@ -61,7 +61,7 @@ The website asks for small JPEGs of Workshop images, and agents for previews, so
 - **Without one**, the whole image is shrunk to fit and never enlarged.
 - `size` is 1 to 2048.
 - The output is JPEG quality 75. A 4K frame is decoded at reduced size (JPEG DCT scaling), so a thumbnail is fast.
-- Pillow is imported on the first thumbnail request, so recording never depends on it. Install it with `python3 -m pip install --user pillow` or your distribution's `python3-pil`.
+- Pillow is imported on the first thumbnail request, so recording never depends on it. Install your distribution's `python3-pil` package, or `brew install pillow` with Homebrew on macOS.
 
 ## Retention
 

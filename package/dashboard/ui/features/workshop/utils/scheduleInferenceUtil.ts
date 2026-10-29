@@ -10,6 +10,8 @@ export const resolveDay = (day: string, now = new Date()) =>
   isRelativeDay(day) ? new Date(+now + relativeDays[day].offset * 86400000).toISOString().slice(0, 10) : day;
 // Matches the server's grace for the relay to upload a window's last clips.
 export const uploadGraceMinutes = 10;
+// Matches the server: new-footage runs check every 15 minutes.
+export const arrivalMinutes = 15;
 export const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 export const clock = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -58,8 +60,10 @@ export function workflowSchedule(workflow: WorkflowDraft) {
   const data = workflow.nodes.find(node => node.data.kind === 'schedule')?.data;
   return data?.kind === 'schedule' ? data : undefined;
 }
-/** Latest HH:MM:SS a Day-of-each-run window may end for a set-time schedule. '' means none fits; null means no limit. */
+/** Latest HH:MM:SS a Day-of-each-run window may end for a schedule. '' means none fits; null means no limit. */
 export function latestUntil(schedule?: ScheduleStep) {
+  // New footage is checked every 15 minutes; the day's last check must see the window's last uploads.
+  if (schedule?.trigger === 'arrival') return `${clock(1440 - arrivalMinutes - uploadGraceMinutes)}:00`;
   if (schedule?.trigger !== 'time' || !/^\d\d:\d\d$/.test(schedule.at)) return null;
   const latest = minutesOf(schedule.at) - uploadGraceMinutes;
   return latest < 0 ? '' : `${clock(latest)}:00`;

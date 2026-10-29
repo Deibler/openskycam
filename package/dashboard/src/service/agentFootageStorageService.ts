@@ -8,6 +8,7 @@ import { action, number, reply, text } from '../utils/agentSharedUtil';
 import { getOverview } from './overviewStorageService';
 import { getAvailability } from './calendarStorageService';
 import { listRecordings } from './footageStorageService';
+import { timestamp } from './cursorStorageService';
 import { requireApiCamera, signLinks } from './credentialSharedService';
 import { photoDetail, requestPhoto } from './workshopPhotoInferenceService';
 import { nextRunUpdate, runFinished } from './workshopLiveInferenceService';
@@ -85,7 +86,8 @@ async function list(app: MachineApp, args: JsonObject) {
 
 async function download(app: MachineApp, args: JsonObject) {
   const cam = camera(app, args),
-    at = text(args, 'at');
+    given = text(args, 'at'),
+    at = given ? timestamp(given, 'at') : undefined;
   const from = at ?? text(args, 'from', true)!,
     to = at ? new Date(Date.parse(at) + 1).toISOString() : text(args, 'to', true)!;
   // A recording that started before `at` still covers it, so look back one clip length.

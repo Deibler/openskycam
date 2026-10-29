@@ -11,10 +11,9 @@ import type {
 import * as ops from '../db/WorkshopScheduleInferenceOps';
 import { run as existingRun } from '../db/WorkshopInferenceOps';
 import { createRun, loadWorkshop } from './workshopInferenceService';
-import { noMedia } from './workshopValidationInferenceService';
+import { arrivalMinutes, noMedia } from './workshopValidationInferenceService';
 
 // ponytail: fixed cadences. The cron fires every minute; these decide how often each trigger acts.
-const arrivalMinutes = 15; // new-footage runs batch this many minutes of uploads
 const slotGrace = 60 * 60000; // a set-time slot still starts if the scheduler missed its minute
 const followLookback = 60 * 60000; // a new follow schedule ignores upstream runs older than this
 
@@ -31,7 +30,7 @@ async function due(
       // Yesterday's slot covers a scheduler minute missed just before midnight.
       const slot = new Date(`${new Date(+now - back * 86400000).toISOString().slice(0, 10)}T${s.at}:00Z`);
       if (s.days.includes(slot.getUTCDay()) && slot <= now && +now - +slot < slotGrace)
-        return { key: slot.toISOString(), label: `Scheduled ${s.at} UTC` };
+        return { key: slot.toISOString(), label: `Scheduled ${s.at} UTC`, slot };
     }
     return null;
   }
@@ -71,7 +70,12 @@ async function runSchedule(env: Env, state: WorkshopState, workflow: Workflow, s
     await createRun(
       env,
       { id, workflow_id: workflow.id, runtime_id: runtime.id, revision: state.revision, mode: 'run' },
-      { now, name: `${workflow.name} · ${trigger.label}`, ...(raw && s.trigger !== 'arrival' ? {} : { since }) },
+      // A slot that starts late, after midnight, still processes the day of its slot.
+      {
+        now: trigger.slot ?? now,
+        name: `${workflow.name} · ${trigger.label}`,
+        ...(raw && s.trigger !== 'arrival' ? {} : { since }),
+      },
     );
     await record('started', trigger.label, id);
   } catch (error) {

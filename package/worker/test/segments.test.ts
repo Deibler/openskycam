@@ -77,7 +77,7 @@ describe('PUT /v1/segments/:cam/:start', () => {
 
   it.each([
     ['an unknown token', startMinutesAgo(20), { token: 'wrong' }, 401],
-    ['an unknown camera', startMinutesAgo(21), { cam: 'nope' }, 400],
+    ['an unknown camera', startMinutesAgo(21), { cam: 'nope' }, 403],
     ['an impossible start time', '20261340T256199Z', {}, 400],
     ['a start older than the retention window', startMinutesAgo(41 * 24 * 60), {}, 400],
     ['a start in the future', startMinutesAgo(-10), {}, 400],

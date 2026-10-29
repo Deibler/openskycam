@@ -76,9 +76,17 @@ case $processor_plist in
     ;;
   *)
     systemctl --user daemon-reload
+    # systemd keeps a unit it cannot parse and the timer then fails every minute; stop here instead of reporting success.
+    for processor_unit in "skyvision-models-$processor_device.service" "skyvision-models-$processor_device.timer"; do
+      processor_state=$(systemctl --user show --property=LoadState --value "$processor_unit")
+      if [ "$processor_state" != loaded ]; then
+        echo "systemd cannot load $processor_unit ($processor_state). See: systemctl --user status $processor_unit" >&2
+        exit 1
+      fi
+    done
     systemctl --user enable "skyvision-models-$processor_device.timer"
     systemctl --user restart "skyvision-models-$processor_device.timer"
-    echo "Run 'loginctl enable-linger $USER' once to keep model sync running after logout."
+    echo "Run 'loginctl enable-linger $(id -un)' once to keep model sync running after logout."
     ;;
 esac
 echo "Model sync installed: $processor_device (every 60 seconds). Status is visible under Models → Devices."

@@ -56,7 +56,8 @@ test('team domains are normalized, and bad input is reported', () => {
   for (const v of ['myteam', 'myteam.cloudflareaccess.com', 'https://MyTeam.cloudflareaccess.com/'])
     assert.equal(lib.teamDomain(v), 'https://myteam.cloudflareaccess.com');
   assert.equal(lib.teamDomain('my team'), undefined);
-  assert.equal(lib.problems.host('sky.example.com'), undefined);
+  assert.equal(lib.problems.host('sky.openskycam.org'), undefined);
+  assert.match(lib.problems.host('api.sky.example.com'), /placeholder/); // .env.example's values are not answers
   assert.ok(lib.problems.host('https://sky.example.com'));
   assert.ok(lib.problems.aud('abc'));
   assert.equal(lib.problems.aud('a'.repeat(64)), undefined);

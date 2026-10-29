@@ -22,8 +22,10 @@ const suffix = {
   utils: 'Util',
   models: 'model',
 };
+// Only folders below src/ name a layer, so a checkout inside, say, ~/service/ is not read as one.
 function layerOf(file) {
-  return file.split(/[\\/]/).findLast(part => Object.hasOwn(layers, part));
+  const parts = file.split(/[\\/]/);
+  return parts.slice(parts.lastIndexOf('src') + 1).findLast(part => Object.hasOwn(layers, part));
 }
 function persistent(type) {
   return /\b(?:D1Database(?:Session)?|D1PreparedStatement|R2Bucket)\b/.test(type);

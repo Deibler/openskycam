@@ -15,11 +15,11 @@ openskycam needs a camera, three roles on machines you own (relay, footage store
 
 ## Camera
 
-Any IP camera works if it serves an **H.265 (HEVC)** RTSP stream.
+Any IP camera works if it serves an **H.264 or H.265** RTSP stream.
 
 - **Codec.** H.264 or H.265. `record.sh` copies the stream without re-encoding. It asks `ffprobe` for the codec first and tags H.265 as `hvc1`, so that Safari and QuickTime play it; H.264 keeps its usual `avc1` tag.
 - **Stream path.** The relay builds `rtsp://<user>:<password>@<address>:<port><path>`. The default path, `/cam/realmonitor?channel=1&subtype=0`, is the Dahua main stream. Set `CAMERA_RTSP_PATH` for other brands, for example `/Streaming/Channels/101` (Hikvision) or `/stream1` (TP-Link Tapo).
-- **Credentials.** The username and password go into that URL unescaped, so they must not contain `@`, `:` or `/`.
+- **Credentials.** Write the username and password in `.env` as they are. The relay percent-encodes them when it builds the URL ([Relay](capture/relay.md)).
 - **Bitrate.** The ingest Worker accepts segments of at most 95 MiB, because Workers on the Free and Pro plans reject request bodies over 100 MB. A 60-second segment stays under that up to about 13 Mbps.
 - **Camera settings.** `camera_mcp.py`, which reads and changes camera settings from Claude Code, speaks the Dahua HTTP API only. Recording does not need it.
 
@@ -46,7 +46,7 @@ Measured on the reference camera: switching from constant bitrate (4.16 Mbps) to
 A Raspberry Pi 4 or 5 is plenty. On a Pi 5, recording a 4 Mbps stream used under 1 second of CPU per minute.
 
 - **RAM.** Segments are written to `/dev/shm`. The relay keeps the segment being recorded plus at most 3 finished ones there, about 30 MB each at 4 Mbps.
-- **Disk.** It holds the backlog while the Worker is unreachable, in `~/skyvision/spool/pending/`. The relay never lets free space drop below `MIN_FREE_GB` (20 GB by default), and deletes the oldest backlog first to keep it.
+- **Disk.** It holds the backlog while the Worker is unreachable, in `~/skyvision/spool/pending/`. The relay never lets free space drop below `MIN_FREE_GB` (20 GB by default): it deletes quarantined files first, then the oldest backlog.
 - **Network.** It needs a steady link to the camera and an upload rate above the camera's bitrate. The relay sends three uploads at once. Measured on the reference relay, one upload through the ingest Worker often ran at about 4 Mbit/s, and three at once reached 24 to 28 Mbit/s together.
 - **Lingering.** Both relay services are systemd user services. Run `loginctl enable-linger $USER` once so they run without a login session. No root access is needed.
 

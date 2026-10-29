@@ -8,8 +8,9 @@ export function cameraIds(env: Env): Set<string> {
   );
 }
 
+/** Forbidden, not invalid: a camera missing from CAMERAS is a deployment mismatch, and the relay keeps its footage. */
 export function requireKnownCamera(env: Env, cam: string): void {
   if (!cameraIds(env).has(cam)) {
-    throw new ApplicationError('invalid_input', `unknown camera: ${cam}`);
+    throw new ApplicationError('forbidden', `unknown camera: ${cam}`);
   }
 }

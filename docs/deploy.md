@@ -20,7 +20,7 @@ curl -fsSL https://raw.githubusercontent.com/Deibler/openskycam/main/setup/insta
 
 The installer checks for Git, Node.js 24, Python 3 and SSH, downloads openskycam to `~/openskycam` (or `OPENSKYCAM_DIR`), installs its dependencies and starts `npm run setup`. In a clone you already have, run `npm install && npm run setup`.
 
-The setup does each step a command can do: it signs in to Cloudflare, creates the database, buckets and VPC service, installs the footage store and the relay over SSH, deploys both Workers with their secrets, and checks the camera's stream before recording it. Some steps happen only in a browser: creating the tunnel and the Access application in the Cloudflare dashboard, and keys on your website. For those it says what to click, opens the page, and checks what you paste. It saves every answer to `.env` and ends each step with the check this page describes, so a step either works or tells you why not.
+The setup does each step a command can do: it signs in to Cloudflare, creates the database, buckets and VPC service, installs the footage store and the relay over SSH, deploys both Workers with their secrets, and checks the camera's stream before recording it. Some steps happen only in a browser: creating the tunnel, the Access application and the Browser Integrity Check rule in the Cloudflare dashboard, and keys on your website. For those it says what to click, opens the page, and checks what you paste. It saves every answer to `.env` and ends each step with the check this page describes, so a step either works or tells you why not.
 
 | Command | What it does |
 |---|---|
@@ -31,7 +31,7 @@ The setup does each step a command can do: it signs in to Cloudflare, creates th
 
 The setup needs key-based SSH login to each host (`ssh-copy-id <host>`). On Linux hosts it offers to run `loginctl enable-linger` and to install missing packages with `sudo`, which ask for your password there.
 
-The steps below are what the setup runs, for doing it by hand.
+The steps below do by hand what the setup does. The processor's folders differ: the setup puts each version in `~/openskycam-processor/<commit>/`, shares one virtual environment in `~/openskycam-processor/.venv`, and keeps the key in `~/.config/openskycam/workshop.key`.
 
 ## 1. Clone and check
 
@@ -69,7 +69,7 @@ Check: `npm run wrangler -- d1 list` and `npm run wrangler -- r2 bucket list` sh
 
 The store is a small HTTP server on the host with the big disk. It listens on `127.0.0.1:8096` only; the Workers reach it through a Cloudflare Tunnel. See [Footage store](capture/store.md).
 
-1. **Prepare the host.** Install Python 3.10 or later, [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) and `openssl`. Mount the footage disk. The footage root should be a mount point, such as `/mnt/footage`: the store refuses uploads while it is not mounted. For a folder on the system disk, add `--system-disk` to the install command below. For thumbnails, install Pillow for that `python3` (`python3 -m pip install --user pillow`, or the `python3-pil` package).
+1. **Prepare the host.** Install Python 3.10 or later, [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) and `openssl`. Mount the footage disk. The footage root should be a mount point, such as `/mnt/footage`: the store refuses uploads while it is not mounted. For a folder on the system disk, add `--system-disk` to the install command below. For thumbnails, install Pillow for that `python3`: the `python3-pil` package on Debian, Ubuntu and Raspberry Pi OS, or `brew install pillow` with Homebrew on macOS.
 
 2. **Create a tunnel.** In the Cloudflare dashboard, open Zero Trust → Networks → Tunnels and create a Cloudflared tunnel. It needs no public hostname. Copy its token and its tunnel ID.
 
@@ -85,7 +85,7 @@ The store is a small HTTP server on the host with the big disk. It listens on `1
    external/store/deploy.sh <store-host> <footage-root>      # for example: me@store-host /mnt/footage
    ```
 
-   On Linux, also run `loginctl enable-linger $USER` on the store host once, so the services run without a login.
+   On Linux, also run `loginctl enable-linger $USER` on the store host once, so the services run without a login. On macOS the agents run in your login session: install while you are logged in at the Mac, and turn on automatic login (which FileVault prevents) so they start again after a restart.
 
 5. **Create the VPC service** that the Workers bind to as `STORE`. The ID it prints is `STORE_SERVICE_ID`.
 
@@ -162,7 +162,7 @@ curl -s -H "Authorization: Bearer <INGEST_TOKEN>" https://skyvision-ingest.<your
 
 2. **Fill in the camera** in `.env`:
    - `CAMERA_IP_ADDRESS`, `CAMERA_USERNAME` and `CAMERA_PASSWORD`;
-   - `CAMERA_RTSP_PORT` and `CAMERA_RTSP_PATH` (see [Requirements](requirements.md) for paths and the H.265 requirement);
+   - `CAMERA_RTSP_PORT` and `CAMERA_RTSP_PATH` (see [Requirements](requirements.md#camera) for stream paths and codecs);
    - `CAM_ID`.
 
 3. **Install the recorder and uploader.** This copies the scripts, writes `~/.config/skyvision/relay.env` (mode 600), and starts both systemd user services.

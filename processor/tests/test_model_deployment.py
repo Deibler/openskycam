@@ -44,11 +44,14 @@ class DeploymentTests(unittest.TestCase):
 
     def test_bad_checksum_or_runtime_keeps_previous_weights_and_parameters(self):
         old = deployment(); self.sync(old); before = (self.root / 'active.json').read_bytes()
-        for data, fail in [(b'truncated', False), (b'new weights', True)]:
+        # A truncated download is dropped; a checkpoint that matched its checksum stays for the next try.
+        for data, fail, files in [(b'truncated', False, 1), (b'new weights', True, 2)]:
             with self.assertRaises(ValueError): self.sync(deployment(b'new weights', 'v2'), data, fail)
             self.assertEqual((self.root / 'active.json').read_bytes(), before)
-            self.assertEqual(len(list((self.root / 'artifacts').iterdir())), 1)
+            self.assertEqual(len(list((self.root / 'artifacts').iterdir())), files)
             self.assertEqual(ops.artifact_path(self.root, old['models'][0]['artifact']).read_bytes(), b'weights')
+        # The next minute's sync does not download it again: these bytes would fail the checksum.
+        with self.assertRaisesRegex(ValueError, 'bad runtime'): self.sync(deployment(b'new weights', 'v2'), b'other', True)
 
     def test_empty_assignment_removes_weights_but_not_cloud_history_or_unrelated_files(self):
         old = deployment(); self.sync(old)

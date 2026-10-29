@@ -18,6 +18,8 @@ export const relativeDays: Record<string, number> = { 'run-day': 0, 'previous-da
 export const isRelativeDay = (day: unknown) => typeof day === 'string' && Object.hasOwn(relativeDays, day);
 // ponytail: fixed margin for the relay to upload a window's last clips; raise it if uploads lag.
 export const uploadGraceMinutes = 10;
+// ponytail: fixed cadence; new-footage runs batch this many minutes of uploads.
+export const arrivalMinutes = 15;
 export const noMedia = 'The selected input has no available media.';
 export function validateDocument(value: unknown): WorkshopDocument {
   if (
@@ -321,6 +323,18 @@ function validateSchedule(d: Record<string, unknown>, footage?: Record<string, u
           : `Schedule at ${String(Math.floor(earliest / 60)).padStart(2, '0')}:${String(earliest % 60).padStart(2, '0')} UTC or later so the whole window has been recorded and uploaded.`,
       );
     }
+  }
+  if (d.trigger === 'arrival' && footage) {
+    // Each run takes the window of the day it runs on, so uploads for a window must land before the day's last check.
+    if (footage.day !== 'run-day')
+      invalid(
+        'When new footage arrives takes recordings as they upload. Choose Day of each run in the footage filter.',
+      );
+    const latest = 1440 - arrivalMinutes - uploadGraceMinutes;
+    if (time(footage.until) && minutes(footage.until) > latest)
+      invalid(
+        `End the window by ${String(Math.floor(latest / 60)).padStart(2, '0')}:${String(latest % 60).padStart(2, '0')} UTC so its last clips upload before the day's final new-footage check.`,
+      );
   }
   if (d.trigger === 'workflow' && !identifier(d.workflowId)) invalid('Choose the workflow this one follows.');
 }

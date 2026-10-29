@@ -36,7 +36,7 @@ export const deleteWorkflowHandler: Handler<App> = async (r, a, { id }) =>
 export const deleteBucketHandler: Handler<App> = async (r, a, { id }) =>
   privateJson(await deletion.deleteWorkshopEntry(a.env, 'bucket', id, await readBody(r)));
 export const reviewHandler: Handler<App> = async (r, a, { id }) =>
-  privateJson(await review.reviewItem(a.env, id, await readBody(r)));
+  privateJson(await review.reviewItem(a.env, id, await readBody(r, 65536)));
 export const imageHandler: Handler<App> = async (_r, a, { id }) => {
   const o = await workshop.websiteImage(a.env, id);
   return new Response(o.body, {
@@ -57,7 +57,7 @@ export const heartbeatHandler: Handler<MachineApp> = async (r, a, { id }) =>
 export const failHandler: Handler<MachineApp> = async (r, a, { id }) =>
   privateJson(await processor.fail(a, id, await readBody(r)));
 export const completeHandler: Handler<MachineApp> = async (r, a, { id }) =>
-  privateJson(await processor.complete(a, id, await readBody(r, 1500000)));
+  privateJson(await processor.complete(a, id, await readBody(r, 8 * 1024 * 1024)));
 export const inputHandler: Handler<MachineApp> = async (r, a, { id }) => {
   const o = await processor.input(a, id, lease(r));
   return new Response(o.body, {
@@ -123,7 +123,7 @@ export const previewHandler: Handler<App> = async (_r, a, { id, item }) => {
   });
 };
 export const progressHandler: Handler<MachineApp> = async (r, a, { id }) =>
-  privateJson(await processor.progress(a, id, await readBody(r, 100000)));
+  privateJson(await processor.progress(a, id, await readBody(r, 1024 * 1024)));
 export const machinePreviewHandler: Handler<MachineApp> = async (_r, a, { id, item }) => {
   const image = await run.machinePreview(a.env, a.principal, id, item);
   return new Response(image.body, {

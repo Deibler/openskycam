@@ -50,7 +50,7 @@ Class, confidence, count, and motion rules read the predictions of the model ups
 - A camera-archive input needs exactly one footage step, before any model. A labeled-bucket input has none.
 - Every path into an output passes a model. A run cannot write into its own input bucket.
 - 1–4 models, all `workflow_ready`. A run covers at most 100 recordings and 2,000 sampled frames, or 2,000 labeled images. Use a shorter window or a larger interval to fit.
-- A schedule needs a moving footage day (`run-day` or `previous-day`). A `time` trigger needs days and `at`. With `run-day`, `at` must be at least 10 minutes after the window's `until`, so the footage has uploaded.
+- A schedule needs a moving footage day (`run-day` or `previous-day`). A `time` trigger needs days and `at`. With `run-day`, `at` must be at least 10 minutes after the window's `until`, so the footage has uploaded. An `arrival` trigger needs `run-day` and a window that ends by 23:35 UTC, so the day's last check, at 23:45, sees its last clips.
 
 ## Editing
 

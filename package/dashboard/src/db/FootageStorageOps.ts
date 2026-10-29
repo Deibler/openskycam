@@ -4,6 +4,7 @@ export async function queryRecordings(
   camera: string,
   from: string,
   to: string,
+  earliest: string,
   asOf: string,
   cursor: Cursor | null,
   limit: number,
@@ -11,10 +12,10 @@ export async function queryRecordings(
   const { results } = await db
     .prepare(
       `SELECT object_key, cam, start, size, sha256, duration_s, frames, width, height, bitrate, codec FROM segments
-    WHERE cam = ? AND start < ? AND strftime('%Y-%m-%dT%H:%M:%fZ', start, '+' || COALESCE(duration_s, 60) || ' seconds') > ? AND uploaded_at <= ?
+    WHERE cam = ? AND start < ? AND start > ? AND strftime('%Y-%m-%dT%H:%M:%fZ', start, '+' || COALESCE(duration_s, 60) || ' seconds') > ? AND uploaded_at <= ?
       AND (start > ? OR (start = ? AND object_key > ?)) ORDER BY start, object_key LIMIT ?`,
     )
-    .bind(camera, to, from, asOf, cursor?.start ?? '', cursor?.start ?? '', cursor?.key ?? '', limit + 1)
+    .bind(camera, to, earliest, from, asOf, cursor?.start ?? '', cursor?.start ?? '', cursor?.key ?? '', limit + 1)
     .all<RecordingRow>();
   return results;
 }

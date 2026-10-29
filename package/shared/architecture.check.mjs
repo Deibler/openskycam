@@ -56,3 +56,10 @@ test('routes register named handlers without execution or business logic', () =>
     ),
   );
 });
+test('reads the layer below src/, not from folders the checkout sits in', () => {
+  const index = "import { routes } from './routes/statusStorageRoute'; export default { fetch(r: Request) {} };";
+  assert.deepEqual(inspectSource('/home/me/service/openskycam/package/worker/src/index.ts', index), []);
+  assert.ok(
+    inspectSource('/home/me/service/openskycam/package/worker/src/db/x.ts', '').some(s => s.includes('filename')),
+  );
+});

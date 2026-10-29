@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import SwaggerParser from '@apidevtools/swagger-parser';
 import { withKeyPaths } from '../src/utils/openapiSharedUtil.ts';
 
@@ -14,6 +14,20 @@ test('the downloadable OpenAPI document validates and gives operations unique ID
   );
   assert.equal(new Set(ids).size, ids.length);
   assert.ok(ids.every(Boolean));
+});
+
+test('every key scope the database accepts is in the document', () => {
+  const migrations = new URL('../db/migrations/', import.meta.url);
+  const latest = readdirSync(migrations)
+    .filter(f => f.endsWith('.sql'))
+    .sort()
+    .findLast(f => readFileSync(new URL(f, migrations), 'utf8').includes('CHECK(scope IN'));
+  const accepted = readFileSync(new URL(latest, migrations), 'utf8').match(/CHECK\(scope IN \(([^)]*)\)/)[1];
+  const scopes = [...accepted.matchAll(/'([^']+)'/g)].map(m => m[1]).sort();
+  const text = readFileSync(new URL('../openapi.json', import.meta.url), 'utf8');
+  const enums = [...text.matchAll(/"enum": \[("footage:read"[^\]]*)\]/g)].map(m => JSON.parse(`[${m[1]}]`).sort());
+  assert.ok(enums.length >= 3);
+  for (const listed of enums) assert.deepEqual(listed, scopes);
 });
 
 test('the served document adds every website operation under /v1 for keys, except key management', async () => {

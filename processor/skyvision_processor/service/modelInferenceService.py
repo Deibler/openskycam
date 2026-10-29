@@ -64,6 +64,8 @@ def training_callback(client: Client, metadata: dict):
 def train_and_publish(client: Client, metadata: dict, config: dict):
     from ultralytics import YOLO
     settings = dict(config)
+    # Ultralytics puts a relative project under its own runs directory; resolve it from here instead.
+    if 'project' in settings: settings['project'] = str(Path(settings['project']).resolve())
     source = settings.pop('model')
     model = YOLO(source)
     model.add_callback('on_train_end', training_callback(client, metadata))
