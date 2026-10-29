@@ -35,7 +35,7 @@ Everything is checked before any storage call, in this order:
 
 | Check | Failure |
 |---|---|
-| `:cam` is in the `CAMERAS` list | `400 unknown camera: <cam>` |
+| `:cam` is in the `CAMERAS` list | `403 unknown camera: <cam>` |
 | `:start` is a real UTC time in the form `YYYYMMDDTHHMMSSZ`. Impossible values such as month 13 are refused. | `400 start must look like 20260922T140500Z` |
 | `:start` is no more than 40 days old and no more than 5 minutes ahead of the Worker's clock | `400 start is outside the retention window` |
 | `Content-Length` is present and positive | `411` |

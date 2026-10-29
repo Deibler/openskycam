@@ -66,7 +66,7 @@ ffmpeg -nostdin -hide_banner -loglevel warning \
 | Option | Why |
 |---|---|
 | `-rtsp_transport tcp` | RTSP over UDP drops packets across the internet |
-| `-timeout 15000000` | Give up on a silent camera after 15 seconds (the value is in microseconds), so systemd restarts the recorder |
+| `-timeout 15000000` | Give up on a silent camera after 15 seconds (the value is in microseconds), so systemd restarts the recorder. ffmpeg 4 (Ubuntu 22.04, Debian 11) names this option `-stimeout`, and `record.sh` uses that name there |
 | `-c copy` | No re-encoding: the stored bytes are what the camera encoded, so image quality is set on the camera only |
 | `-tag:v hvc1` (H.265 only) | Safari and QuickTime refuse HEVC tagged `hev1`. Only the sample-entry label changes; decoded frames are identical. ffmpeg refuses the tag on H.264, which keeps `avc1`. |
 | `-segment_time 60 -segment_atclocktime 1` | One file per minute, cut on the minute. The cut lands on the first keyframe after it, so files run about 59.4 to 60.4 seconds and no frames are lost between them. |
@@ -75,7 +75,7 @@ ffmpeg -nostdin -hide_banner -loglevel warning \
 
 Segments are written to `/dev/shm/skyvision`, which is RAM, sparing the SD card 20 to 45 GB of writes a day while uploads keep up.
 
-The unit restarts `ffmpeg` whenever it exits (`Restart=always`). The delay grows from 2 seconds to at most 10 (`RestartSec=2`, `RestartSteps=5`, `RestartMaxDelaySec=10`), so a long camera outage does not cause a tight loop. `StartLimitIntervalSec=0` means systemd never stops retrying. A crash costs about 5 seconds of footage: the cut-off file keeps what was written, and the restart takes about 4 seconds.
+The unit restarts `ffmpeg` whenever it exits (`Restart=always`). The delay grows from 2 seconds to at most 10 (`RestartSec=2`, `RestartSteps=5`, `RestartMaxDelaySec=10`), so a long camera outage does not cause a tight loop. The growing delay needs systemd 254 or later; older systemd (Debian 12, Raspberry Pi OS Bookworm, Ubuntu 22.04) ignores those two keys and restarts every 2 seconds. `StartLimitIntervalSec=0` means systemd never stops retrying. A crash costs about 5 seconds of footage: the cut-off file keeps what was written, and the restart takes about 4 seconds.
 
 ## Uploading
 
@@ -84,7 +84,7 @@ The unit restarts `ffmpeg` whenever it exits (`Restart=always`). The delay grows
 1. **Keep RAM small.** At most 3 finished segments stay in RAM. Older ones move to `~/skyvision/spool/pending/` on disk. A full RAM disk stops the recorder with "No space left on device" and loses footage.
 2. **Upload a batch.** The next 3 files are uploaded in parallel: finished segments in RAM first, then the backlog in `pending/`, oldest first. One upload through the Worker often ran at about 4 Mbit/s, the camera's own rate, while three at once reached 24 to 28 Mbit/s together.
 3. **Act on each response**, as shown in the table below.
-4. **Guard the disk.** While the spool's file system has less than `MIN_FREE_GB` GiB free, the oldest file in `pending/` is deleted. Other services on the host need the disk; a log line names each dropped file.
+4. **Guard the disk.** While the spool's file system has less than `MIN_FREE_GB` GiB free, the oldest file in `quarantine/` is deleted, then the oldest in `pending/`. Other services on the host need the disk; a log line names each dropped file.
 5. **Sleep.** After a batch with no "unavailable" result, the loop runs again at once. Otherwise, or when there is nothing to upload, it waits 10 seconds.
 
 For each file, the uploader:
@@ -107,10 +107,10 @@ The token reaches `curl` on stdin as a config line (`-K -`), so it never appears
 | Worker response | Meaning | What the relay does |
 |---|---|---|
 | `200`, `201` | Stored (`200`: these exact bytes were already stored) | Deletes the local file |
-| `000`, `401`, `403`, `404`, `408`, `429`, `5xx` | Worker unreachable, not deployed, wrong token, rate-limited, or storage unavailable | Keeps the file. If any upload in the batch got one of these, it moves every finished RAM segment to `pending/` and waits 10 seconds. |
+| `000`, `401`, `403`, `404`, `408`, `429`, `5xx` | Worker unreachable, not deployed, wrong token, camera not in the Worker's `CAMERAS`, rate-limited, or storage unavailable | Keeps the file. If any upload in the batch got one of these, it moves every finished RAM segment to `pending/` and waits 10 seconds. |
 | Anything else (`400`, `409`, `411`, `413`, `415`, `422`, …) | A problem with this file | Moves it to `quarantine/` and continues |
 
-`401` and `403` count as "unavailable" so that a wrong or missing token never discards footage. The backlog grows until you fix the token. A `workers.dev` URL with no Worker behind it answers `404`, so nothing is quarantined before the Worker exists.
+`401` and `403` count as "unavailable" so that a wrong or missing token, or a `CAM_ID` the deployed Worker does not list in `CAMERAS`, never discards footage. The backlog grows until you fix the token. A `workers.dev` URL with no Worker behind it answers `404`, so nothing is quarantined before the Worker exists.
 
 The upload service runs at `Nice=10` and restarts 10 seconds after any exit.
 
@@ -120,7 +120,7 @@ The upload service runs at `Nice=10` and restarts 10 seconds after any exit.
 |---|---|
 | `/dev/shm/skyvision/` | Being recorded, or one of the next 3 finished segments to upload |
 | `~/skyvision/spool/pending/` | Waiting: the Worker was unavailable or uploads fell behind. Retried oldest first. |
-| `~/skyvision/spool/quarantine/` | Unreadable, or rejected by the Worker. Kept for inspection, never retried or cleaned up. |
+| `~/skyvision/spool/quarantine/` | Unreadable, or rejected by the Worker. Kept for inspection and never retried. Deleted, oldest first, only when the disk runs low, before any backlog. |
 
 A day of outage at 4 Mbit/s is about 43 GB of spool (4 Mbit/s × 86,400 s). The free disk divided by that is how long the relay can hold a backlog; past `MIN_FREE_GB`, the oldest footage goes first.
 

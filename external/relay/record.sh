@@ -11,14 +11,19 @@ mkdir -p "$LIVE_DIR"
 cd "$LIVE_DIR"
 export TZ=UTC   # filenames are UTC: no DST duplicates or gaps
 
-codec=$(ffprobe -v error -rtsp_transport tcp -timeout 15000000 -select_streams v:0 \
+# The RTSP socket timeout is -timeout from ffmpeg 5 on. ffmpeg 4 (Ubuntu 22.04, Debian 11) calls it -stimeout,
+# and reads -timeout as "wait for the camera to connect to us", which makes it listen instead of connect.
+timeout=-timeout
+[[ $(ffmpeg -hide_banner -h demuxer=rtsp 2>/dev/null) == *-stimeout* ]] && timeout=-stimeout
+
+codec=$(ffprobe -v error -rtsp_transport tcp "$timeout" 15000000 -select_streams v:0 \
   -show_entries stream=codec_name -of csv=p=0 "$CAMERA_RTSP_URL")
 tag=()
 [ "$codec" = hevc ] && tag=(-tag:v hvc1)
 
 # ponytail: the RTSP URL (with camera password) is visible in `ps` to other users on this Pi; ffmpeg can't read it from a file.
 exec ffmpeg -nostdin -hide_banner -loglevel warning \
-  -rtsp_transport tcp -timeout 15000000 -fflags +genpts \
+  -rtsp_transport tcp "$timeout" 15000000 -fflags +genpts \
   -i "$CAMERA_RTSP_URL" \
   -map 0:v:0 -c copy "${tag[@]}" \
   -f segment -segment_time 60 -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 \

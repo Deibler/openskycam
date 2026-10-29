@@ -46,7 +46,7 @@ Measured on the reference camera: switching from constant bitrate (4.16 Mbps) to
 A Raspberry Pi 4 or 5 is plenty. On a Pi 5, recording a 4 Mbps stream used under 1 second of CPU per minute.
 
 - **RAM.** Segments are written to `/dev/shm`. The relay keeps the segment being recorded plus at most 3 finished ones there, about 30 MB each at 4 Mbps.
-- **Disk.** It holds the backlog while the Worker is unreachable, in `~/skyvision/spool/pending/`. The relay never lets free space drop below `MIN_FREE_GB` (20 GB by default), and deletes the oldest backlog first to keep it.
+- **Disk.** It holds the backlog while the Worker is unreachable, in `~/skyvision/spool/pending/`. The relay never lets free space drop below `MIN_FREE_GB` (20 GB by default): it deletes quarantined files first, then the oldest backlog.
 - **Network.** It needs a steady link to the camera and an upload rate above the camera's bitrate. The relay sends three uploads at once. Measured on the reference relay, one upload through the ingest Worker often ran at about 4 Mbit/s, and three at once reached 24 to 28 Mbit/s together.
 - **Lingering.** Both relay services are systemd user services. Run `loginctl enable-linger $USER` once so they run without a login session. No root access is needed.
 

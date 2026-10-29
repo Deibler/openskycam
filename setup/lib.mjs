@@ -81,9 +81,11 @@ export function teamDomain(value) {
 /** Each returns a problem to show, or undefined when the value is fine. */
 export const problems = {
   host: v =>
-    /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(v)
-      ? undefined
-      : 'Enter a hostname such as sky.example.com, without https://.',
+    !/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(v)
+      ? 'Enter a hostname such as sky.example.com, without https://.'
+      : /(^|\.)example\.(com|net|org)$/.test(v)
+        ? 'Enter a hostname on your own domain; example.com is the placeholder from .env.example.'
+        : undefined,
   ssh: v => (/^[A-Za-z0-9._@-]+$/.test(v) ? undefined : 'Enter an SSH host such as pi@relay.local or a Host alias.'),
   folder: v => (/^\/[^'"\n]*$/.test(v) ? undefined : 'Enter an absolute path, such as /mnt/footage.'),
   camera: v =>

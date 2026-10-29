@@ -66,9 +66,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._reply(411, error='Content-Length is required', close=True)
         if not self.server.mounted():
             return self._reply(503, error='footage disk is not mounted', close=True)
-        if shutil.disk_usage(self.server.root).free < self.server.min_free:
-            return self._reply(507, error='footage disk is nearly full', close=True)
         try:
+            if shutil.disk_usage(self.server.root).free < self.server.min_free:
+                return self._reply(507, error='footage disk is nearly full', close=True)
             body = self._chunked_body() if chunked else self._sized_body(int(length))
             created, size = objects.put(self.server.root, target, body, sha256)
         except objects.Conflict as error:

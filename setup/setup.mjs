@@ -218,8 +218,13 @@ async function linger(host) {
   if (ssh(host, 'uname').out.trim() !== 'Linux') return;
   if (ssh(host, 'loginctl show-user "$USER" --property=Linger').out.includes('Linger=yes')) return;
   say(`${host} must keep its services running when nobody is logged in (loginctl enable-linger).`);
-  if (await confirm('Turn that on now? It may ask for your password on that host.'))
-    sshTerminal(host, `sudo ${assumeYes ? '-n ' : ''}loginctl enable-linger "$USER"`);
+  if (!(await confirm('Turn that on now? It may ask for your password on that host.'))) {
+    say(yellow(`Without it, ${host} stops openskycam's services when you log out.`));
+    return;
+  }
+  sshTerminal(host, `sudo ${assumeYes ? '-n ' : ''}loginctl enable-linger "$USER"`);
+  if (!ssh(host, 'loginctl show-user "$USER" --property=Linger').out.includes('Linger=yes'))
+    throw new Error(`Lingering is still off on ${host}. Run sudo loginctl enable-linger "$USER" there, then run setup again.`);
 }
 
 const storeToken = () => {
@@ -445,7 +450,11 @@ const steps = [
     async check() {
       if (!env.INGEST_URL || !env.INGEST_TOKEN) return 'The ingest Worker is not deployed yet.';
       const status = await http(`${env.INGEST_URL}/v1/status`, { headers: { Authorization: `Bearer ${env.INGEST_TOKEN}` } });
-      return [200, 503].includes(status.status) && json(status.text)?.cameras ? true : `${env.INGEST_URL} answers ${status.status || status.text}.`;
+      const listed = json(status.text)?.cameras;
+      if (![200, 503].includes(status.status) || !listed) return `${env.INGEST_URL} answers ${status.status || status.text}.`;
+      // A camera added to CAMERAS after the deploy is refused until the Worker is deployed again.
+      const missing = (env.CAMERAS ?? '').split(',').filter(c => c && !listed.some(l => l.cam === c));
+      return missing.length ? `The ingest Worker does not accept ${missing.join(', ')} yet.` : true;
     },
     async run() {
       if (!/^[a-f0-9]{64}$/.test(env.INGEST_TOKEN ?? '')) save({ INGEST_TOKEN: crypto.randomBytes(32).toString('hex') });
@@ -471,7 +480,7 @@ const steps = [
     async check() {
       if (!env.INGEST_URL) return 'The ingest Worker is not deployed yet.';
       const status = json((await http(`${env.INGEST_URL}/v1/status`, { headers: { Authorization: `Bearer ${env.INGEST_TOKEN}` } })).text);
-      const camera = status?.cameras?.find(c => c.cam === env.CAM_ID) ?? status?.cameras?.[0];
+      const camera = status?.cameras?.find(c => c.cam === env.CAM_ID);
       if (camera?.age_seconds == null) return 'No recording has arrived yet.';
       return camera.age_seconds <= 180 ? true : `The newest recording is ${camera.age_seconds} seconds old.`;
     },
@@ -484,6 +493,8 @@ const steps = [
       if (missing.length) {
         say(yellow(`${host} is missing: ${missing.join(', ')}.`));
         if (await confirm('Install ffmpeg and curl with apt now? It asks for your password on that host.')) sshTerminal(host, `sudo ${assumeYes ? '-n ' : ''}sh -c 'apt-get update && apt-get install -y ffmpeg curl'`);
+        const still = ssh(host, 'for t in ffmpeg ffprobe curl; do command -v $t >/dev/null || echo $t; done').out.split('\n').filter(Boolean);
+        if (still.length) throw new Error(`${host} is still missing ${still.join(', ')}. Install them there, then run setup again.`);
       }
       await linger(host);
       for (;;) {

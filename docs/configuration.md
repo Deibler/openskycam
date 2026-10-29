@@ -27,7 +27,7 @@ Copy `.env.example` to `.env`. Three programs read it: bash (`make deploy`, `mak
 | `CAMERA_RTSP_PORT` | `554` | relay | RTSP port |
 | `CAMERA_RTSP_PATH` | `/cam/realmonitor?channel=1&subtype=0` | relay | Stream path after the port. The default is the Dahua main stream |
 | `CAMERA_SCHEME` | `http` | camera MCP | `http` or `https`, for the camera's web API |
-| `CAMERA_PORT` | none | camera MCP | The camera's web API port |
+| `CAMERA_PORT` | `80`, or `443` with `https` | camera MCP | The camera's web API port |
 
 ### Relay
 
@@ -55,7 +55,7 @@ Variables already set in the environment win over `.env`. In Workers Builds, set
 
 ### Guided setup
 
-[`npm run setup`](deploy.md#guided-setup) writes every key above and these, which only it reads. They let it check and redo steps later.
+[`npm run setup`](deploy.md#guided-setup) writes every key above except `CAMERA_SCHEME`, `CAMERA_PORT`, `MIN_FREE_GB` and `DOCS_HOST`, which keep their defaults, and these, which only it reads. They let it check and redo steps later.
 
 | Key | Meaning |
 |---|---|

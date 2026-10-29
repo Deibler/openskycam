@@ -85,7 +85,7 @@ The store is a small HTTP server on the host with the big disk. It listens on `1
    external/store/deploy.sh <store-host> <footage-root>      # for example: me@store-host /mnt/footage
    ```
 
-   On Linux, also run `loginctl enable-linger $USER` on the store host once, so the services run without a login.
+   On Linux, also run `loginctl enable-linger $USER` on the store host once, so the services run without a login. On macOS the agents run in your login session: install while you are logged in at the Mac, and turn on automatic login (which FileVault prevents) so they start again after a restart.
 
 5. **Create the VPC service** that the Workers bind to as `STORE`. The ID it prints is `STORE_SERVICE_ID`.
 

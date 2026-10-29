@@ -5,6 +5,8 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -105,6 +107,11 @@ class StoreTest(unittest.TestCase):
         response, _ = self.put(os.urandom(1_000))
         self.assertEqual(response.status, 507)
         self.assertIsNone(self.stored())
+
+    def test_answers_503_when_the_footage_folder_is_missing(self):
+        shutil.rmtree(self.root)
+        response, _ = self.put(os.urandom(1_000))
+        self.assertEqual(response.status, 503)
 
     def test_accepts_writes_while_free_space_is_above_the_floor(self):
         # The janitor stops pruning once free space reaches the floor, so a write must not demand more.
@@ -257,6 +264,19 @@ class DeployTest(unittest.TestCase):
         self.assertTrue(bootouts)
         for arguments in bootouts:
             self.assertRegex(arguments, r'^"gui/\$\(id -u\)" "[^"]+\.plist"')
+
+    @unittest.skipUnless(shutil.which('systemd-analyze'), 'needs systemd-analyze')
+    def test_linux_unit_takes_any_footage_folder(self):
+        # ExecStart= expands % and $ and unescapes \ and ", so the folder is escaped for systemd.
+        script = (Path(__file__).parents[1] / 'deploy.sh').read_text()
+        quote = re.search(r'^\s*(unit_quote\(\).*)$', script, re.MULTILINE).group(1)
+        unit = Path(tempfile.mkdtemp()) / 'store.service'
+        root = '/mnt/foot%20age $x "q" back\\slash'
+        subprocess.run(['bash', '-c', quote + '; printf "[Service]\\nExecStart=%s -m skyvision_store --root %s\\n" '
+                        '"$(unit_quote "$1")" "$(unit_quote "$2")" > "$3"', '-', sys.executable, root, str(unit)], check=True)
+        self.assertIn('--root "/mnt/foot%%20age $$x \\"q\\" back\\\\slash"', unit.read_text())
+        result = subprocess.run(['systemd-analyze', 'verify', '--man=no', str(unit)], capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
 
 
 if __name__ == '__main__':

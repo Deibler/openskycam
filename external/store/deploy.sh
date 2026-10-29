@@ -24,11 +24,16 @@ set -euo pipefail
 # Non-interactive ssh on macOS usually lacks Homebrew's PATH; prefer its python3, which has Pillow.
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
 python=$(command -v python3) || { echo "python3 not found on the store host" >&2; exit 1; }
+"$python" -c 'import sys; sys.exit(sys.version_info < (3, 10))' \
+  || { echo "$python is older than Python 3.10; install a newer python3 (on macOS: brew install python)" >&2; exit 1; }
 cloudflared=$(command -v cloudflared) || { echo "cloudflared not found on the store host; install it first" >&2; exit 1; }
 config=$HOME/.config/skyvision-store
 [ -s "$config/tunnel.token" ] || { echo "missing $config/tunnel.token" >&2; exit 1; }
 [ -s "$config/store.token" ] || (umask 077 && openssl rand -hex 32 > "$config/store.token")
 "$python" -c 'import PIL' 2>/dev/null || echo "warning: no Pillow for $python; thumbnails will answer 503" >&2
+# A folder on the system disk has no mount to wait for, and the store never creates its root.
+[ -z "$DISK" ] || mkdir -p "$ROOT"
+[ -w "$ROOT" ] || echo "warning: $ROOT is missing or not writable by $(id -un); uploads will fail until it is" >&2
 
 case $(uname) in
 Darwin)
@@ -65,6 +70,8 @@ PY
   tail -n 3 "$HOME/Library/Logs/org.openskycam.store.log"
   ;;
 Linux)
+  # ExecStart= expands % specifiers and $ variables, and reads \ and " as escapes inside quotes.
+  unit_quote() { local v=${1//\\/\\\\}; v=${v//%/%%}; v=${v//\$/\$\$}; printf '"%s"' "${v//\"/\\\"}"; }
   units=$HOME/.config/systemd/user
   mkdir -p "$units"
   cat > "$units/skyvision-store.service" <<UNIT
@@ -75,7 +82,7 @@ StartLimitIntervalSec=0
 [Service]
 WorkingDirectory=$HOME/skyvision-store
 Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
-ExecStart="$python" -m skyvision_store --root "$ROOT" --token-file "$config/store.token" $DISK
+ExecStart=$(unit_quote "$python") -m skyvision_store --root $(unit_quote "$ROOT") --token-file $(unit_quote "$config/store.token") $DISK
 Restart=always
 RestartSec=10
 
@@ -88,7 +95,7 @@ Description=SkyVision footage store tunnel (cloudflared)
 StartLimitIntervalSec=0
 
 [Service]
-ExecStart="$cloudflared" tunnel --no-autoupdate run --token-file "$config/tunnel.token"
+ExecStart=$(unit_quote "$cloudflared") tunnel --no-autoupdate run --token-file $(unit_quote "$config/tunnel.token")
 Restart=always
 RestartSec=10
 
