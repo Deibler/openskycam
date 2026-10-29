@@ -3,7 +3,7 @@ import hashlib
 import json
 import tempfile
 from pathlib import Path
-from ..utils.httpSharedUtil import Client
+from ..utils.httpSharedUtil import Client, retrying
 from ..models.workshopInferencemodel import WorkshopJob, WorkshopResult, WorkshopProgress
 
 
@@ -15,20 +15,27 @@ def headers(job: WorkshopJob):
     return {'X-Lease-Generation': str(job['generation']), 'X-Lease-Token': job['lease_token']}
 
 
+# Heartbeats, downloads and uploads are repeatable, so a dropped connection or a 5xx is tried again
+# instead of failing the job for good.
 def heartbeat(client, job):
-    with client.open('/v1/workshop/jobs/' + job['id'] + '/heartbeat', b'{}', {**headers(job), 'Content-Type': 'application/json'}, 'POST') as response:
-        return json.load(response)
+    def renew():
+        with client.open('/v1/workshop/jobs/' + job['id'] + '/heartbeat', b'{}', {**headers(job), 'Content-Type': 'application/json'}, 'POST') as response:
+            return json.load(response)
+    return retrying(renew)
 
 
 def download(client, job, suffix, target: Path, expected: str, size=None):
-    digest = hashlib.sha256(); count = 0
-    with client.open('/v1/workshop/jobs/' + job['id'] + suffix, headers=headers(job)) as response, target.open('wb') as output:
-        for chunk in iter(lambda: response.read(1024 * 1024), b''):
-            count += len(chunk)
-            if count > (size if size is not None else 8 * 1024**2):
-                raise ValueError('Download exceeds pinned size')
-            digest.update(chunk); output.write(chunk)
-    if digest.hexdigest() != expected or (size is not None and count != size):
+    def fetch():
+        digest = hashlib.sha256(); count = 0
+        with client.open('/v1/workshop/jobs/' + job['id'] + suffix, headers=headers(job)) as response, target.open('wb') as output:
+            for chunk in iter(lambda: response.read(1024 * 1024), b''):
+                count += len(chunk)
+                if count > (size if size is not None else 8 * 1024**2):
+                    raise ValueError('Download exceeds pinned size')
+                digest.update(chunk); output.write(chunk)
+        return digest.hexdigest(), count
+    digest, count = retrying(fetch)
+    if digest != expected or (size is not None and count != size):
         raise ValueError('Pinned media checksum mismatch')
 
 
@@ -38,8 +45,10 @@ def temporary_attempt():
 
 def upload(client, job, data: bytes):
     digest = hashlib.sha256(data).hexdigest()
-    with client.open('/v1/workshop/jobs/' + job['id'] + '/images/' + digest, data, {**headers(job), 'Content-Type': 'image/jpeg'}, 'PUT') as response:
-        json.load(response)
+    def send():
+        with client.open('/v1/workshop/jobs/' + job['id'] + '/images/' + digest, data, {**headers(job), 'Content-Type': 'image/jpeg'}, 'PUT') as response:
+            json.load(response)
+    retrying(send)
     return digest
 
 

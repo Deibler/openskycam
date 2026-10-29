@@ -13,6 +13,9 @@ workshop_runtime=$3
 workshop_origin=$4
 workshop_dependencies=${5:-}
 workshop_source=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# The runner imports these before it claims a job; without them the service would restart every 30 seconds.
+PYTHONPATH="$workshop_source${workshop_dependencies:+:$workshop_dependencies}" "$workshop_python" -c 'import av, cv2, torch, ultralytics' \
+  || { echo "$workshop_python cannot import av, cv2, torch and ultralytics: install requirements.txt into it first" >&2; exit 1; }
 workshop_plist=$("$workshop_python" - "$workshop_python" "$workshop_key" "$workshop_runtime" "$workshop_origin" "$workshop_source" "$workshop_dependencies" <<'PY'
 import os, plistlib, re, sys
 from pathlib import Path
@@ -20,8 +23,11 @@ from urllib.parse import urlsplit
 python, key, runtime, origin, source, dependencies = sys.argv[1:]
 if not re.fullmatch(r'workshop-[a-f0-9]{32}', runtime):
     raise SystemExit('A registered immutable Workshop runtime ID is required')
-if urlsplit(origin).scheme != 'https':
+parsed = urlsplit(origin.rstrip('/'))
+if parsed.scheme != 'https':
     raise SystemExit('The persistent runner requires HTTPS')
+if parsed.path or parsed.query or parsed.fragment or parsed.username or not parsed.hostname:
+    raise SystemExit('The API origin is https://<api-host>, with no path')
 python, key, source = (str(Path(p).absolute()) for p in (python, key, source))
 if not Path(key).is_file() or Path(key).stat().st_mode & 0o077:
     raise SystemExit('Credential file must exist with mode 600')

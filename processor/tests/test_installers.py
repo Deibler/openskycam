@@ -68,7 +68,7 @@ class LinuxUnits(unittest.TestCase):
 
     def test_workshop_runner_keeps_its_checks(self):
         args = ['/py', str(self.key), 'workshop-' + 'a' * 32, 'https://api.example.com', '/src', '']
-        for index, bad in ((2, 'workshop-latest'), (3, 'http://api.example.com')):
+        for index, bad in ((2, 'workshop-latest'), (3, 'http://api.example.com'), (3, 'https://api.example.com/v1')):
             self.assertNotEqual(0, install('install-workshop.sh', *args[:index], bad, *args[index + 1:], home=self.home).returncode)
         self.key.chmod(0o644)
         self.assertNotEqual(0, install('install-workshop.sh', *args, home=self.home).returncode)
@@ -105,12 +105,14 @@ class LinuxUnits(unittest.TestCase):
     def test_workshop_installer_stops_when_systemd_cannot_load_the_unit(self):
         stubs, log = Path(self.home) / 'bin', Path(self.home) / 'systemctl.log'
         stubs.mkdir()
+        for module in ('av', 'cv2', 'torch', 'ultralytics'):  # the runner's libraries, as the dependency directory
+            (stubs / (module + '.py')).write_text('')
         (stubs / 'systemctl').write_text(f'#!/bin/sh\necho "$*" >> "{log}"\n[ "$2" = show ] && echo "$STATE"\nexit 0\n')
         (stubs / 'systemctl').chmod(0o755)
         for state, code in (('bad-setting', 1), ('loaded', 0)):
             log.write_text('')
             result = subprocess.run(['bash', str(PROCESSOR / 'install-workshop.sh'), sys.executable, str(self.key),
-                                     'workshop-' + 'a' * 32, 'https://api.example.com'], capture_output=True, text=True,
+                                     'workshop-' + 'a' * 32, 'https://api.example.com', str(stubs)], capture_output=True, text=True,
                                     env={**os.environ, 'HOME': self.home, 'STATE': state, 'PATH': f'{stubs}:{os.environ["PATH"]}'})
             self.assertEqual(code, result.returncode, result.stderr)
             self.assertEqual(state == 'loaded', 'enable skyvision-workshop.service' in log.read_text())

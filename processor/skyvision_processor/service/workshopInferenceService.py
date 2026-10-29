@@ -425,6 +425,8 @@ def run_workshop(client, runtime, fingerprint=None):
 
 def process_workshop(client, runtime, watch=False):
     """Keep WORKERS recordings in flight so one's download, decode and server calls overlap another's model pass."""
+    # A runner that claimed jobs it cannot import the libraries for would fail every one of them for good.
+    import av, cv2, torch, ultralytics  # noqa: F401
     fingerprint = code_hash()
     if not watch:
         yield run_workshop(client, runtime, fingerprint)

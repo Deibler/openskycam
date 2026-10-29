@@ -1,4 +1,5 @@
 """Stateful outbound transport: credentials are restricted to one origin, without redirects."""
+import io
 import json
 import time
 import urllib.error
@@ -27,19 +28,30 @@ class Client:
         parsed = urllib.parse.urlsplit(url)
         if (parsed.scheme, parsed.netloc) != self.origin or parsed.username:
             raise ProcessingError("download_failed")
+        if isinstance(data, bytes):
+            # Sent in blocks, so the timeout bounds each block rather than a whole 8 MiB chunk on a slow uplink.
+            headers = {**(headers or {}), "Content-Length": str(len(data))}
+            data = io.BytesIO(data)
         return self.opener.open(urllib.request.Request(url, data=data,
             headers={"Authorization": "Bearer " + self.token, **(headers or {})}, method=method), timeout=45)
 
     def post(self, path, body, retry=False):
         data = json.dumps(body, separators=(",", ":"), allow_nan=False).encode()
-        for attempt in range(3 if retry else 1):
-            try:
-                with self.open(path, data, {"Content-Type": "application/json"}, "POST") as response:
-                    return json.load(response)
-            except urllib.error.HTTPError as error:
-                if error.code < 500 or not retry or attempt == 2:
-                    raise
-            except (OSError, TimeoutError):
-                if not retry or attempt == 2:
-                    raise
-            time.sleep(attempt + 1)
+        def send():
+            with self.open(path, data, {"Content-Type": "application/json"}, "POST") as response:
+                return json.load(response)
+        return retrying(send, 3 if retry else 1)
+
+
+def retrying(action, attempts=3):
+    """Run action again after a 5xx answer or a network error; any other failure is final."""
+    for attempt in range(attempts):
+        try:
+            return action()
+        except urllib.error.HTTPError as error:
+            if error.code < 500 or attempt == attempts - 1:
+                raise
+        except (OSError, TimeoutError):
+            if attempt == attempts - 1:
+                raise
+        time.sleep(attempt + 1)

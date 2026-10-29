@@ -61,10 +61,10 @@ GPUs run the model in half precision (`half=True`); the CPU runs full precision.
 
 | Argument | Meaning |
 |---|---|
-| 1. Python | Absolute path of the interpreter. A virtual environment's interpreter is used as given, not resolved. |
+| 1. Python | Absolute path of the interpreter. A virtual environment's interpreter is used as given, not resolved. It must import `av`, `cv2`, `torch` and `ultralytics`, or the installer stops. |
 | 2. Key file | Must exist with mode 600, or the installer stops. |
 | 3. Runtime ID | Must match `workshop-[a-f0-9]{32}`. |
-| 4. API origin | Must be HTTPS. |
+| 4. API origin | Must be HTTPS, with no path: `https://<api-host>`. |
 | 5. Dependency directory | Optional. Added to `PYTHONPATH` after the source directory. |
 
 The service runs `python -m skyvision_processor workshop-run --base-url <origin> --key-file <key> --runtime <id> --watch`.

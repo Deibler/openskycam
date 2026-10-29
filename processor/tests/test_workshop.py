@@ -194,3 +194,35 @@ class WorkshopSampling(unittest.TestCase):
             with patch.object(w, 'samples', side_effect=broken), self.assertRaises(ValueError):
                 w.run_workshop(None,'runtime','f')
         self.assertEqual(events, ['acquire', 'decode', 'complete', 'release', 'acquire', 'decode', 'release'])
+
+
+class WorkshopTransport(unittest.TestCase):
+    def test_a_dropped_connection_or_5xx_is_tried_again_and_a_refusal_is_not(self):
+        import io
+        import hashlib
+        import tempfile
+        import urllib.error
+        from pathlib import Path
+        from unittest.mock import patch
+        from skyvision_processor.db import WorkshopInferenceOps as ops
+        data = b'recording bytes'
+        job = {'id': 'job_1', 'generation': 1, 'lease_token': 'token'}
+
+        class Client:
+            def __init__(self, *failures):
+                self.failures, self.calls = list(failures), 0
+            def open(self, *_args, **_kwargs):
+                self.calls += 1
+                if self.failures: raise self.failures.pop(0)
+                return io.BytesIO(data)
+
+        target = Path(tempfile.mkdtemp()) / 'input.mp4'
+        busy = urllib.error.HTTPError('u', 502, 'Bad Gateway', {}, None)
+        with patch('skyvision_processor.utils.httpSharedUtil.time.sleep'):
+            client = Client(ConnectionResetError(), busy)
+            ops.download(client, job, '/input', target, hashlib.sha256(data).hexdigest(), len(data))
+            self.assertEqual((3, data), (client.calls, target.read_bytes()))
+            lost = Client(urllib.error.HTTPError('u', 409, 'Conflict', {}, None))
+            with self.assertRaises(urllib.error.HTTPError):
+                ops.download(lost, job, '/input', target, hashlib.sha256(data).hexdigest(), len(data))
+            self.assertEqual(1, lost.calls)
