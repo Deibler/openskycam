@@ -9,11 +9,11 @@ Everything runs from a clone with Node.js 24 (`.node-version`), Python 3 and `sh
 ## Install
 
 ```sh
-npm install        # Biome at the root, then `npm ci` in package/dashboard and package/worker
+npm install        # Biome at the root, then `npm ci` in package/dashboard, package/worker and package/docs
 cp .env.example .env
 ```
 
-Each Worker installs from its own lockfile. The documentation site is separate: `cd package/docs && npm ci`.
+Each Worker and the documentation site install from their own lockfiles.
 
 ## Run the website
 
@@ -72,15 +72,18 @@ This is what CI runs. It stops at the first failing part:
 | `docs-check` | In `package/docs`: builds this site and its search index, and fails on a broken internal link, a missing `#anchor`, or a page that is not in the sidebar |
 | `processor-check` | `python3 -m unittest discover -s tests` in `processor/` |
 | `store-check` | The same in `external/store/` |
-| `lint` | `shellcheck -x` on the relay, store and processor shell scripts |
+| `setup-check` | `node --test setup/lib.check.mjs`, the guided setup's parsing and validation |
+| `lint` | `shellcheck -x` on the relay, store and processor shell scripts and `setup/install.sh` |
 | (last step) | `python3 camera_mcp.py --check`, the camera MCP self-test |
 
 The processor's image tests need `numpy` and OpenCV, and the store's thumbnail tests need Pillow. CI installs them like this:
 
 ```sh
-python3 -m pip install numpy==2.4.3 opencv-python-headless==4.13.0.92
 sudo apt-get install shellcheck python3-pil
+python3 -m pip install --user --break-system-packages numpy==2.4.3 opencv-python-headless==4.13.0.92
 ```
+
+On your own machine, a virtual environment avoids `--break-system-packages`: `python3 -m venv .venv && .venv/bin/pip install numpy==2.4.3 opencv-python-headless==4.13.0.92 pillow`, then `PATH="$PWD/.venv/bin:$PATH" make check`.
 
 The GitHub workflow ([`.github/workflows/check.yml`](https://github.com/Deibler/openskycam/blob/main/.github/workflows/check.yml)) runs on every pull request and on pushes to `main`, on Ubuntu, with a 15-minute limit. Workers Builds runs each Worker's `npm run check` again before deploying it.
 

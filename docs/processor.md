@@ -117,6 +117,8 @@ To upgrade:
 2. Print its fingerprint and register a new runtime.
 3. Rerun `install-workshop.sh` from the new directory with the new runtime ID. The installer replaces the service definition and restarts it.
 
+If `npm run setup` installed the processor, update your clone (`git pull`) and run `npm run setup -- processor` instead. It copies the new source to `~/openskycam-processor/<commit>/`, registers its runtime and reinstalls the service.
+
 Runs already created stay bound to the runtime they were created with. To roll back, rerun `install-workshop.sh` from the previous directory with the previous runtime ID; runtime records are never deleted.
 
 ## How a job runs
@@ -127,7 +129,7 @@ A Workshop run is split into jobs: one per recording, or one per image for runs 
 2. **Lease.** A claim leases the job for 5 minutes and increments its generation. A background thread renews it every 45 seconds (`POST …/jobs/{id}/heartbeat`). A job whose lease runs out goes back to the queue and is claimed again with a new generation. After its third lease expires it fails with `attempts_exhausted`. A stale attempt cannot publish: every write checks the generation and token, and returns 409 "The lease is no longer valid. Discard this attempt." The processor stops the job as soon as a renewal fails.
 3. **Input.** `GET …/jobs/{id}/input` streams the original recording from the footage store, or the image. The download goes to a temporary directory and must match the pinned SHA-256 and size.
 4. **Models.** `GET …/jobs/{id}/models/{sha256}` downloads a model's `.pt` file. The server allows only models the leased run uses. Files are cached by checksum, in `~/Library/Caches/openskycam-workshop/` on macOS or `$XDG_CACHE_HOME/openskycam-workshop/` (default `~/.cache/…`) on Linux. Before use, the checkpoint's class map and task must match the registry. One model stays loaded between jobs.
-5. **Frames.** The processor samples frames (see [Workflows](workshop/workflows.md)), runs the workflow graph on each, and tracks boxes across the recording (see [Tracking](workshop/tracking.md)). `POST …/jobs/{id}/progress` reports the phase (`downloading`, `processing`, `finalizing`), and each finished frame for the website's live view.
+5. **Frames.** The processor samples frames (see [Workflows](workshop/workflows.md)), runs the workflow graph on each, and tracks boxes across the recording (see [Tracking](workshop/tracking.md)). `POST …/jobs/{id}/progress` reports the phase (`downloading`, `loading_model`, `processing`, `uploading`, `finalizing`), and each finished frame for the website's live view.
 6. **Upload.** Each kept frame is uploaded as `PUT …/jobs/{id}/images/{sha256}` (a JPEG of at most 8 MiB; the server checks the JPEG markers and the checksum).
 7. **Complete or fail.** `POST …/jobs/{id}/complete` sends the fingerprint, the sample count, slots the recorder skipped (`empty_slots`), and every frame's labels and tracks. Repeating the same result is accepted. On any error the processor sends `POST …/jobs/{id}/fail` with `processor_failed`; the other accepted codes are `download_failed`, `decode_failed` and `model_failed`.
 

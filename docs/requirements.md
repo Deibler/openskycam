@@ -15,11 +15,11 @@ openskycam needs a camera, three roles on machines you own (relay, footage store
 
 ## Camera
 
-Any IP camera works if it serves an **H.265 (HEVC)** RTSP stream.
+Any IP camera works if it serves an **H.264 or H.265** RTSP stream.
 
 - **Codec.** H.264 or H.265. `record.sh` copies the stream without re-encoding. It asks `ffprobe` for the codec first and tags H.265 as `hvc1`, so that Safari and QuickTime play it; H.264 keeps its usual `avc1` tag.
 - **Stream path.** The relay builds `rtsp://<user>:<password>@<address>:<port><path>`. The default path, `/cam/realmonitor?channel=1&subtype=0`, is the Dahua main stream. Set `CAMERA_RTSP_PATH` for other brands, for example `/Streaming/Channels/101` (Hikvision) or `/stream1` (TP-Link Tapo).
-- **Credentials.** The username and password go into that URL unescaped, so they must not contain `@`, `:` or `/`.
+- **Credentials.** Write the username and password in `.env` as they are. The relay percent-encodes them when it builds the URL ([Relay](capture/relay.md)).
 - **Bitrate.** The ingest Worker accepts segments of at most 95 MiB, because Workers on the Free and Pro plans reject request bodies over 100 MB. A 60-second segment stays under that up to about 13 Mbps.
 - **Camera settings.** `camera_mcp.py`, which reads and changes camera settings from Claude Code, speaks the Dahua HTTP API only. Recording does not need it.
 

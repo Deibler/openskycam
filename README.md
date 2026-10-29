@@ -82,7 +82,7 @@ You need an RTSP camera, a Linux machine near it for the relay (a Raspberry Pi i
 curl -fsSL https://raw.githubusercontent.com/Deibler/openskycam/main/setup/install.sh | bash
 ```
 
-It checks your tools, downloads openskycam to `~/openskycam` and starts a guided setup. The setup signs in to Cloudflare, creates the database and buckets, installs the footage store and the relay over SSH, deploys both Workers, and waits for the first recording to arrive. For the two things only the Cloudflare dashboard can do, a tunnel and the sign-in application, it explains each click and checks what you paste. Answers are saved in `.env`, so you can stop and run `npm run setup` again; `npm run setup -- --check` checks a running deployment and changes nothing.
+It checks your tools, downloads openskycam to `~/openskycam` and starts a guided setup. The setup signs in to Cloudflare, creates the database and buckets, installs the footage store and the relay over SSH, deploys both Workers, and waits for the first recording to arrive. For the things only the Cloudflare dashboard can do, a tunnel, the sign-in application and a rule that turns off Browser Integrity Check on the API host, it explains each click and checks the result. Answers are saved in `.env`, so you can stop and run `npm run setup` again; `npm run setup -- --check` checks a running deployment and changes nothing.
 
 [Deploy your own](https://docs.openskycam.org/deploy/) explains every step the setup runs, if you would rather do it by hand. To work on the code:
 
@@ -108,7 +108,7 @@ openskycam is built for an AI agent to operate:
 
 You ask in plain words: *"Did the camera record all night?"*, *"Find last night's meteors and show me the clearest three"*, *"Build a workflow that keeps moving planes between 02:00 and 09:30 UTC and run it every night"*, *"Review the waiting images in Planes"*. Three steps need a person:
 - the first Cloudflare login;
-- creating the tunnel and the sign-in application in the Cloudflare dashboard;
+- creating the tunnel, the sign-in application and the Browser Integrity Check rule in the Cloudflare dashboard;
 - creating API keys on the website.
 
 [Run it with an agent](https://docs.openskycam.org/agents/) maps each request to the tool that answers it.
