@@ -71,9 +71,15 @@ case $workshop_plist in
     ;;
   *)
     systemctl --user daemon-reload
+    # systemd keeps a unit it cannot parse and only fails when it starts; stop here instead of reporting success.
+    workshop_state=$(systemctl --user show --property=LoadState --value skyvision-workshop.service)
+    if [ "$workshop_state" != loaded ]; then
+      echo "systemd cannot load $workshop_plist ($workshop_state). See: systemctl --user status skyvision-workshop" >&2
+      exit 1
+    fi
     systemctl --user enable skyvision-workshop.service
     systemctl --user restart skyvision-workshop.service
-    echo "Status: systemctl --user status skyvision-workshop. Run 'loginctl enable-linger $USER' once to keep it running after logout."
+    echo "Status: systemctl --user status skyvision-workshop. Run 'loginctl enable-linger $(id -un)' once to keep it running after logout."
     ;;
 esac
 echo "Workshop runner installed. Verify its heartbeat under Workshop before submitting work."

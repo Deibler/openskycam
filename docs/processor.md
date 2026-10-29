@@ -74,7 +74,7 @@ The service runs `python -m skyvision_processor workshop-run --base-url <origin>
 | macOS | `~/Library/LaunchAgents/org.openskycam.workshop.plist`: `KeepAlive`, `Nice` 10, low-priority I/O, standard process type | `launchctl print gui/$(id -u)/org.openskycam.workshop` | `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/org.openskycam.workshop.plist` |
 | Linux | `~/.config/systemd/user/skyvision-workshop.service`: `Restart=always`, `RestartSec=30`, `Nice=10`, best-effort I/O priority 7 | `systemctl --user status skyvision-workshop` | `systemctl --user disable --now skyvision-workshop` |
 
-On Linux, run `loginctl enable-linger $USER` once so the service runs without a login session. On macOS the agent runs at standard priority on purpose. Background priority confines it to efficiency cores, where decoding measured 4.8 times slower on a Mac mini.
+On Linux, run `loginctl enable-linger $USER` once so the service runs without a login session. If systemd cannot load the unit the installer wrote, the installer stops with an error before enabling it; `systemctl --user status skyvision-workshop` shows why. On macOS the agent runs at standard priority on purpose. Background priority confines it to efficiency cores, where decoding measured 4.8 times slower on a Mac mini.
 
 Both services discard standard output and error. To see what the runner does, stop the service and run one job in the foreground:
 

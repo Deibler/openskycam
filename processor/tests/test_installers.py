@@ -1,6 +1,7 @@
 """The GPU choice, and the systemd units the install scripts write on Linux."""
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -86,6 +87,33 @@ class LinuxUnits(unittest.TestCase):
         self.assertIn('"sync-models" "--base-url" "https://api.example.com" "--key-file"', service)
         self.assertNotEqual(0, install('install-model-sync.sh', '/py', 'Bad Device', str(self.key), 'https://x', '/m', '/s',
                                        home=self.home).returncode)
+
+    @unittest.skipUnless(shutil.which('systemd-analyze'), 'needs systemd-analyze')
+    def test_systemd_loads_the_units(self):
+        # The string checks above passed while systemd rejected a quoted WorkingDirectory=, so ask systemd's parser too.
+        source = Path(self.home) / 'src 100%'
+        source.mkdir()
+        workshop = install('install-workshop.sh', sys.executable, str(self.key), 'workshop-' + 'a' * 32,
+                           'https://api.example.com', str(source), '', home=self.home)
+        sync = install('install-model-sync.sh', sys.executable, 'gpu-box', str(self.key), 'https://api.example.com',
+                       '/models', str(source), home=self.home)
+        units = [workshop.stdout.strip(), str(Path(sync.stdout.strip()).with_suffix('.service'))]
+        result = subprocess.run(['systemd-analyze', 'verify', '--man=no', *units], capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'installs a systemd unit')
+    def test_workshop_installer_stops_when_systemd_cannot_load_the_unit(self):
+        stubs, log = Path(self.home) / 'bin', Path(self.home) / 'systemctl.log'
+        stubs.mkdir()
+        (stubs / 'systemctl').write_text(f'#!/bin/sh\necho "$*" >> "{log}"\n[ "$2" = show ] && echo "$STATE"\nexit 0\n')
+        (stubs / 'systemctl').chmod(0o755)
+        for state, code in (('bad-setting', 1), ('loaded', 0)):
+            log.write_text('')
+            result = subprocess.run(['bash', str(PROCESSOR / 'install-workshop.sh'), sys.executable, str(self.key),
+                                     'workshop-' + 'a' * 32, 'https://api.example.com'], capture_output=True, text=True,
+                                    env={**os.environ, 'HOME': self.home, 'STATE': state, 'PATH': f'{stubs}:{os.environ["PATH"]}'})
+            self.assertEqual(code, result.returncode, result.stderr)
+            self.assertEqual(state == 'loaded', 'enable skyvision-workshop.service' in log.read_text())
 
     def test_scripts_require_the_api_origin(self):
         for script, args in (('install-workshop.sh', ['/py', str(self.key), 'workshop-' + 'a' * 32]),
