@@ -10,6 +10,8 @@ export const resolveDay = (day: string, now = new Date()) =>
   isRelativeDay(day) ? new Date(+now + relativeDays[day].offset * 86400000).toISOString().slice(0, 10) : day;
 // Matches the server's grace for the relay to upload a window's last clips.
 export const uploadGraceMinutes = 10;
+// Matches the server: new-footage runs check every 15 minutes.
+export const arrivalMinutes = 15;
 export const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 export const clock = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;

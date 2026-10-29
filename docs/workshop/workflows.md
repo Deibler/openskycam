@@ -139,7 +139,7 @@ How each trigger behaves:
 - A labeled-bucket input always takes only images added since the last scheduled run, whatever the trigger.
 - **`onlyIf`** skips a set-time run when its window has no footage, and a follow run when the upstream run saved no images.
 
-A scheduled workflow's footage `day` must be `run-day` or `previous-day`; a fixed date would process the same footage every time and is refused. With `run-day`, `at` must be at least 10 minutes after the window's `until` so its last clips have uploaded. A window that would need a time after midnight must use `previous-day`.
+A scheduled workflow's footage `day` must be `run-day` or `previous-day`; a fixed date would process the same footage every time and is refused. With `run-day`, `at` must be at least 10 minutes after the window's `until` so its last clips have uploaded. A window that would need a time after midnight must use `previous-day`. A slot that starts late, after midnight, still takes the day of its slot. When new footage arrives needs `run-day` and a window that ends by 23:35 UTC, so its last clips upload before the day's final check at 23:45.
 
 The dashboard Worker's cron runs every minute. A scheduled run's ID is `sched_` plus a hash of the workflow and trigger, so a repeated or retried minute never starts a second run. Scheduled runs go to the newest [processor runtime](runs.md) that has checked in; with none, the outcome is `failed` and the next minute tries again. `GET /api/workshop/schedules` lists each schedule's last outcome: `started` (with `run_id`), `skipped`, or `failed` (with `message`). The editor shows the same.
 
@@ -204,6 +204,6 @@ Why it is built this way:
 
 - **The trigger is When new footage arrives.** A full run takes at most 100 recordings and 2,000 sampled frames. The whole 7.5-hour window has 450 one-minute recordings and 27,000 one-second slots, so a set-time run of it would be refused. Every 15 minutes the arrival trigger takes only the recordings uploaded since the last run, about 15 recordings and 900 frames, and outside 02:00–09:30 it finds nothing and records `skipped`.
 - **The first arrival run has no earlier run to count from**, so it takes everything already uploaded in the window. Add the schedule outside 02:00–09:30. Added mid-window, the first run can exceed 100 recordings and fail each time until the window starts empty the next night.
-- **`run-day`** is required on any schedule, and here it means "tonight": the window is the UTC date each run is created on.
+- **`run-day`** is required for When new footage arrives, and here it means "tonight": the window is the UTC date each run is created on.
 - **Frames with no Plane at all** take the `no` branch too, since neither rule matches. Put a condition with a `class` rule (`Plane`, `present`) in front of this one if those frames should go elsewhere, or to Do nothing.
 - Run a [test](runs.md) of 20–100 frames first; it uses the same pinned models and sampling and saves nothing.

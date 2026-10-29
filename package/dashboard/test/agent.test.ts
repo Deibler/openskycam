@@ -246,6 +246,25 @@ describe('Agent MCP server', () => {
     expect(prompt.result.messages[0].content.text).toContain('Skill: verify your changes');
   });
 
+  it('takes a photo before the Workshop document was ever saved, and again after it failed', async () => {
+    const p = await processor();
+    const start = minutesAgo(600);
+    await clip(start);
+    const at = new Date(+start + 5_000).toISOString();
+    const failed = await ok(agent.token, 'footage', { action: 'photo', at, wait_seconds: 0 });
+    const first = (await p.claim())!;
+    expect(first.run_id).toBe(failed.photo_id);
+    const lease = { generation: first.generation, lease_token: first.lease_token };
+    expect((await p.machine(`/jobs/${first.id}/fail`, { ...lease, error: 'decode_failed' })).status).toBe(200);
+    // Asking again makes a new photo instead of handing back the failed one.
+    const again = await ok(agent.token, 'footage', { action: 'photo', at, wait_seconds: 0 });
+    expect(again.photo_id).not.toBe(failed.photo_id);
+    const job = (await p.claim())!;
+    expect(job.run_id).toBe(again.photo_id);
+    await p.finish(job, { bucket_id: 'camera-archive', model_node: null, offset: 5, annotations: [] });
+    expect((await ok(agent.token, 'footage', { action: 'photo', at, wait_seconds: 0 })).photo_id).toBe(again.photo_id);
+  });
+
   it('builds a workflow, protects edits with revisions, test-runs it, and wakes a watch on live progress', async () => {
     const p = await processor();
     const start = minutesAgo(90);
@@ -279,6 +298,16 @@ describe('Agent MCP server', () => {
     });
     expect(created).toMatchObject({ ready: true, issue: null });
     expect(created.steps.find((s: { id: string }) => s.id === 'keep').bucketId).toBe(bucket.bucket_id);
+    // A key for sky01 cannot save a workflow, or a schedule the cron would run, for another camera.
+    expect(
+      (
+        await call(agent.token, 'workflows', {
+          action: 'create',
+          name: 'Elsewhere',
+          steps: [{ id: 'input', kind: 'input', camera: 'sky02' }],
+        })
+      ).error,
+    ).toContain('cannot access that camera');
     const id = created.workflow_id;
     expect(
       (
@@ -441,6 +470,9 @@ describe('Agent MCP server', () => {
 
     const temporary = await key('agent');
     const [download] = (await ok(temporary.token, 'footage', { action: 'download', at })).files;
+    expect((await call(temporary.token, 'footage', { action: 'download', at: 'noon' })).error).toContain(
+      'at must be an ISO 8601 timestamp',
+    );
     expect(download.filename).toMatch(/^sky01_\d{8}T\d{6}Z\.mp4$/);
     expect((await fetchLink(download.url)).status).toBe(404); // signed and authorized; the test clip has no bytes in the store
     expect((await web(`/api/keys/${temporary.key.id}`, undefined, 'DELETE')).status).toBe(200);

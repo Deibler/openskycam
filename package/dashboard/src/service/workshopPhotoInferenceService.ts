@@ -25,9 +25,13 @@ export async function requestPhoto(env: Env, principal: ApiPrincipal, camera: un
   if (!time || !Number.isFinite(+time))
     invalid('Give the photo time as an ISO 8601 UTC time, such as 2026-09-24T14:32:05Z.');
   const iso = time.toISOString();
-  // The same camera and time within an hour reuse one photo instead of decoding it again.
-  const id = `photo_${(await sha256(`${cam}|${iso}|${Math.floor(Date.now() / photoLifetime)}`)).slice(0, 32)}`;
-  if (await ops.run(env, id)) return id;
+  // The same camera and time within an hour reuse one photo instead of decoding it again. One that
+  // failed, was cancelled or expired is made again under the next ID, so asking again works.
+  let id = `photo_${(await sha256(`${cam}|${iso}|${Math.floor(Date.now() / photoLifetime)}`)).slice(0, 32)}`;
+  while (await ops.run(env, id)) {
+    if (!['failed', 'cancelled', 'expired'].includes((await runDetail(env, id)).status)) return id;
+    id = `photo_${(await sha256(id)).slice(0, 32)}`;
+  }
   const rows = await ops.recordings(
     env,
     cam,
@@ -112,7 +116,12 @@ export async function requestPhoto(env: Env, principal: ApiPrincipal, camera: un
     from: iso,
     until: new Date(+time + 1000).toISOString(),
   };
-  const state = await loadWorkshop(env);
+  let state = await loadWorkshop(env);
+  // A Workshop never saved has no document row, and both the run and its frame are checked against one.
+  if (!state.revision) {
+    await ops.saveState(env, 0, JSON.stringify(state.document), created.toISOString());
+    state = await loadWorkshop(env);
+  }
   await ops.insertRun(
     env,
     {

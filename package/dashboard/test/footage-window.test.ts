@@ -13,7 +13,9 @@ describe('footage window', () => {
     for (const start of days) {
       const from = new Date(+start + 63_060).toISOString(),
         to = new Date(+start + 123_060).toISOString();
-      if ((await queryRecordings(env.CATALOG, CAM, from, to, asOf, null, 10)).length) listed.push(start.toISOString());
+      const earliest = new Date(+start - 3_600_000).toISOString();
+      if ((await queryRecordings(env.CATALOG, CAM, from, to, earliest, asOf, null, 10)).length)
+        listed.push(start.toISOString());
     }
     expect(listed).toEqual([]);
   });

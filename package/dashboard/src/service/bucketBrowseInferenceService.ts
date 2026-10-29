@@ -71,6 +71,8 @@ function filter(bucket: string, query: Record<string, string>, now: string): Buc
     (f.from && f.to && f.from >= f.to)
   )
     invalid('Check the filter range.');
+  // 100 tops the filter's range and means 100 or more: a frame keeps up to 1,000 labels.
+  if (f.maxObjects === 100) f.maxObjects = 1000;
   return f;
 }
 

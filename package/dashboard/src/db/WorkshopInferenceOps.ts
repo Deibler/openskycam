@@ -190,6 +190,22 @@ export async function upload(env: Env, u: WorkshopUpload) {
     .bind(u.object_key, u.job_id, u.generation, u.sha256, u.bytes, u.expires_at)
     .run();
 }
+// D1 caps a bound string at 2 MB, and one frame's tracks may take 512 KB, so finished frames go in chunks.
+const ITEM_CHUNK_BYTES = 1_000_000;
+function itemChunks(items: WorkshopItem[]) {
+  const chunks: WorkshopItem[][] = [];
+  let size = Infinity;
+  for (const item of items) {
+    const bytes = JSON.stringify(item).length;
+    if (size + bytes > ITEM_CHUNK_BYTES) {
+      chunks.push([]);
+      size = 0;
+    }
+    chunks.at(-1)!.push(item);
+    size += bytes;
+  }
+  return chunks;
+}
 export async function complete(
   env: Env,
   j: WorkshopJob,
@@ -199,22 +215,28 @@ export async function complete(
   test = false,
 ) {
   const db = env.CATALOG.withSession('first-primary');
+  const previews = itemChunks(test ? items : []),
+    firstPosition = previews.map((_, i) => previews.slice(0, i).reduce((n, c) => n + c.length, 0));
   const rs = await db.batch([
     db
       .prepare(
         `UPDATE workshop_jobs SET status='completed',result_sha256=?,completed_at=? WHERE id=? AND status='leased' AND generation=? AND lease_token=? AND lease_until>? AND expires_at>?`,
       )
       .bind(digest, now, j.id, j.generation, j.lease_token, now, now),
-    db
-      .prepare(
-        `INSERT OR IGNORE INTO workshop_items SELECT json_extract(v.value,'$.id'),json_extract(v.value,'$.bucket_id'),json_extract(v.value,'$.asset_id'),json_extract(v.value,'$.run_id'),json_extract(v.value,'$.job_id'),json_extract(v.value,'$.source_sha256'),json_extract(v.value,'$.cam'),json_extract(v.value,'$.captured_at'),json_extract(v.value,'$.object_key'),json_extract(v.value,'$.sha256'),json_extract(v.value,'$.expires_at'),json_extract(v.value,'$.annotation_json'),json_extract(v.value,'$.provenance_json'),'pending',? FROM json_each(?) v WHERE EXISTS(SELECT 1 FROM workshop_jobs WHERE id=? AND status='completed' AND result_sha256=? AND generation=? AND lease_token=?) AND EXISTS(SELECT 1 FROM workshop_state s,json_each(s.document_json,'$.buckets') b WHERE json_extract(b.value,'$.id')=json_extract(v.value,'$.bucket_id'))`,
-      )
-      .bind(now, JSON.stringify(test ? [] : items), j.id, digest, j.generation, j.lease_token),
-    db
-      .prepare(
-        `INSERT OR REPLACE INTO workshop_previews SELECT ?,?,CAST(v.key AS INTEGER),json_extract(v.value,'$.id'),v.value,json_extract(v.value,'$.expires_at') FROM json_each(?) v WHERE EXISTS(SELECT 1 FROM workshop_jobs WHERE id=? AND status='completed' AND result_sha256=? AND generation=? AND lease_token=?) AND EXISTS(SELECT 1 FROM workshop_state s,json_each(s.document_json,'$.buckets') b WHERE json_extract(b.value,'$.id')=json_extract(v.value,'$.bucket_id'))`,
-      )
-      .bind(j.id, j.generation, JSON.stringify(test ? items : []), j.id, digest, j.generation, j.lease_token),
+    ...itemChunks(test ? [] : items).map(chunk =>
+      db
+        .prepare(
+          `INSERT OR IGNORE INTO workshop_items SELECT json_extract(v.value,'$.id'),json_extract(v.value,'$.bucket_id'),json_extract(v.value,'$.asset_id'),json_extract(v.value,'$.run_id'),json_extract(v.value,'$.job_id'),json_extract(v.value,'$.source_sha256'),json_extract(v.value,'$.cam'),json_extract(v.value,'$.captured_at'),json_extract(v.value,'$.object_key'),json_extract(v.value,'$.sha256'),json_extract(v.value,'$.expires_at'),json_extract(v.value,'$.annotation_json'),json_extract(v.value,'$.provenance_json'),'pending',? FROM json_each(?) v WHERE EXISTS(SELECT 1 FROM workshop_jobs WHERE id=? AND status='completed' AND result_sha256=? AND generation=? AND lease_token=?) AND EXISTS(SELECT 1 FROM workshop_state s,json_each(s.document_json,'$.buckets') b WHERE json_extract(b.value,'$.id')=json_extract(v.value,'$.bucket_id'))`,
+        )
+        .bind(now, JSON.stringify(chunk), j.id, digest, j.generation, j.lease_token),
+    ),
+    ...previews.map((chunk, i) =>
+      db
+        .prepare(
+          `INSERT OR REPLACE INTO workshop_previews SELECT ?,?,CAST(v.key AS INTEGER)+?,json_extract(v.value,'$.id'),v.value,json_extract(v.value,'$.expires_at') FROM json_each(?) v WHERE EXISTS(SELECT 1 FROM workshop_jobs WHERE id=? AND status='completed' AND result_sha256=? AND generation=? AND lease_token=?) AND EXISTS(SELECT 1 FROM workshop_state s,json_each(s.document_json,'$.buckets') b WHERE json_extract(b.value,'$.id')=json_extract(v.value,'$.bucket_id'))`,
+        )
+        .bind(j.id, j.generation, firstPosition[i], JSON.stringify(chunk), j.id, digest, j.generation, j.lease_token),
+    ),
     db
       .prepare(
         `DELETE FROM workshop_previews WHERE job_id=? AND ?=0 AND EXISTS(SELECT 1 FROM workshop_jobs WHERE id=? AND status='completed' AND result_sha256=? AND generation=? AND lease_token=?)`,

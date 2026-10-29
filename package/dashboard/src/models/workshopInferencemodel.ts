@@ -307,6 +307,7 @@ export interface WorkshopScheduleDue {
   key: string;
   label: string;
   found?: boolean;
+  slot?: Date;
 }
 export interface WorkshopFinishedRun {
   id: string;

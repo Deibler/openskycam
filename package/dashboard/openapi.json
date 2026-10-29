@@ -751,7 +751,7 @@
                   },
                   "scope": {
                     "type": "string",
-                    "enum": ["footage:read", "processor:run", "models:write", "models:sync"],
+                    "enum": ["footage:read", "processor:run", "models:write", "models:sync", "workshop:run", "agent"],
                     "default": "footage:read"
                   },
                   "pipeline_id": {
@@ -5663,7 +5663,7 @@
           },
           "scope": {
             "type": "string",
-            "enum": ["footage:read", "processor:run", "models:write", "models:sync", "workshop:run"]
+            "enum": ["footage:read", "processor:run", "models:write", "models:sync", "workshop:run", "agent"]
           },
           "cameras": {
             "type": "array",
@@ -5783,7 +5783,7 @@
           },
           "scope": {
             "type": "string",
-            "enum": ["footage:read", "processor:run", "models:write", "models:sync", "workshop:run"]
+            "enum": ["footage:read", "processor:run", "models:write", "models:sync", "workshop:run", "agent"]
           },
           "cameras": {
             "type": "array",

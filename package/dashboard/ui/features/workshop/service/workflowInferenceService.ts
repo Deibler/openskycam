@@ -16,7 +16,14 @@ import type { ModelVersion } from '../../../../src/models/modelInferencemodel';
 import { modelKey } from '../../../lib/model-library';
 import { conditionIssues, newCondition, upstreamModel } from './conditionInferenceService';
 import { requiresPredictions } from '../utils/conditionInferenceUtil';
-import { clock, followLoop, isRelativeDay, minutesOf, uploadGraceMinutes } from '../utils/scheduleInferenceUtil';
+import {
+  arrivalMinutes,
+  clock,
+  followLoop,
+  isRelativeDay,
+  minutesOf,
+  uploadGraceMinutes,
+} from '../utils/scheduleInferenceUtil';
 
 export function newStep(kind: StepKind): WorkflowStep {
   switch (kind) {
@@ -222,6 +229,18 @@ export function validateWorkflow(
             : `Schedule at ${clock(earliest)} UTC or later so the whole window has been recorded and uploaded.`,
         );
       }
+      if (data.trigger === 'arrival' && footage?.kind === 'footage' && footage.day && footage.day !== 'run-day')
+        add('When new footage arrives takes recordings as they upload. Choose Day of each run in the footage filter.');
+      const latest = 1440 - arrivalMinutes - uploadGraceMinutes;
+      if (
+        data.trigger === 'arrival' &&
+        footage?.kind === 'footage' &&
+        footage.until &&
+        minutesOf(footage.until) > latest
+      )
+        add(
+          `End the window by ${clock(latest)} UTC so its last clips upload before the day's final new-footage check.`,
+        );
       if (
         data.trigger === 'workflow' &&
         !workflows.some(item => item.id === data.workflowId && item.id !== workflow.id)
