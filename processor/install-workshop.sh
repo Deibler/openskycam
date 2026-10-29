@@ -44,11 +44,13 @@ elif sys.platform.startswith('linux'):
     def quote(value, expand=True):  # systemd unit quoting; ExecStart= also expands $
         value = value.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')
         return '"' + (value.replace('$', '$$') if expand else value) + '"'
+    def unit_path(value):  # systemd never strips quotes from WorkingDirectory=, so write it raw
+        return value.replace('%', '%%')
     folder = Path.home() / '.config/systemd/user'; folder.mkdir(parents=True, exist_ok=True)
     path = folder / 'skyvision-workshop.service'
     content = '\n'.join([
         '[Unit]', 'Description=SkyVision Workshop runner', 'After=network-online.target', 'StartLimitIntervalSec=0', '',
-        '[Service]', 'WorkingDirectory=' + quote(source, False),
+        '[Service]', 'WorkingDirectory=' + unit_path(source),
         *('Environment=' + quote(f'{k}={v}', False) for k, v in environment.items()),
         'ExecStart=' + ' '.join(quote(a) for a in arguments),
         'Restart=always', 'RestartSec=30', 'Nice=10', 'IOSchedulingClass=best-effort', 'IOSchedulingPriority=7',
