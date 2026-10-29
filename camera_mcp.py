@@ -72,9 +72,11 @@ def load_env(path=ENV_PATH):
 
 
 def env_value(raw):
-    """A value as bash reads it: the setup writes 'it'\\''s' for it's."""
+    """A value as bash reads it: the setup writes 'it'\\''s' for it's, and # starts a comment only as its own word."""
+    if raw[:1].isspace() and raw.lstrip().startswith("#"):
+        return ""
     try:
-        words = shlex.split(raw, comments=True)
+        words = shlex.split(raw)
     except ValueError:
         return raw.strip()
     return words[0] if words else ""
@@ -244,6 +246,7 @@ def demo():
         raise SystemExit("auth key was accepted")
     assert "secret" not in redact("table.X.Password=secret\ntable.X.BitRate=1", "secret")
     assert env_value("'it'\\''s-ok'") == "it's-ok" and env_value('"a b"') == "a b" and env_value("") == ""
+    assert env_value("Sky#2026") == "Sky#2026" and env_value("abc  # note") == "abc" and env_value("'a # b' # x") == "a # b"
     assert Camera({"CAMERA_PASSWORD": "p", "CAMERA_USERNAME": "u", "CAMERA_IP_ADDRESS": "10.0.0.2"}).base == "http://10.0.0.2:80"
     print("ok")
 

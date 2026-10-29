@@ -7,11 +7,12 @@ import { classColor, modelClasses, sightingClass } from '../utils/sightingInfere
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable=true]');
-// Enter and Space on a focused button or link press it, never the reviewer's shortcut for the sighting.
+// Enter and Space press a button reached from the keyboard. A clicked button keeps focus in most browsers,
+// but is not :focus-visible, so after a click the keys stay the reviewer's shortcuts.
 const pressing = (e: KeyboardEvent) =>
   (e.key === 'Enter' || e.key === ' ') &&
   e.target instanceof HTMLElement &&
-  !!e.target.closest('button, a[href], [role=button]');
+  !!e.target.closest('button, a[href], [role=button]')?.matches(':focus-visible');
 const time = (iso: string, seconds = false) =>
   new Date(iso).toLocaleTimeString([], {
     hour: 'numeric',

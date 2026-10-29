@@ -11,7 +11,7 @@ import {
 } from '../ui/features/workshop/service/workflowInferenceService';
 import { restoreWorkshop } from '../ui/features/workshop/service/workshopDraftInferenceService';
 import { cameraArchive, createBucket } from '../ui/features/workshop/service/bucketInferenceService';
-import { nextSlot } from '../ui/features/workshop/utils/scheduleInferenceUtil';
+import { latestUntil, nextSlot } from '../ui/features/workshop/utils/scheduleInferenceUtil';
 import type { WorkshopBucket } from '../ui/features/workshop/models/bucketInferencemodel';
 import type { ModelVersion } from '../src/models/modelInferencemodel';
 import type { ScheduleStep, WorkflowDraft } from '../ui/features/workshop/models/workflowInferencemodel';
@@ -96,6 +96,13 @@ it('waits for a same-day window to upload and requires days and a time', () => {
   );
   expect(messages(scheduled('Late', { at: '13:10' }, 'run-day'))).toEqual([]);
   expect(messages(scheduled('No days', { days: [] }))).toContain('Choose the days and UTC time for this schedule.');
+});
+it("keeps a new-footage schedule on the day of each run, ending before the day's last check", () => {
+  expect(messages(scheduled('Arrival', { trigger: 'arrival' }))).toContain(
+    'When new footage arrives takes recordings as they upload. Choose Day of each run in the footage filter.',
+  );
+  expect(messages(scheduled('Arrival today', { trigger: 'arrival' }, 'run-day'))).toEqual([]);
+  expect(latestUntil({ ...schedule, trigger: 'arrival' })).toBe('23:35:00');
 });
 it('flags workflows that would start each other in a loop', () => {
   const a = scheduled('A'),

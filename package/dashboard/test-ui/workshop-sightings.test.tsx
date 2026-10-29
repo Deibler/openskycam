@@ -507,15 +507,41 @@ const openReviewer = async (onItem = vi.fn()) => {
 const sighting = (n: number) => screen.getByRole('article', { name: `Sighting ${n} of 2: Plane` });
 const reviews = () => puts.map(p => [p.id, p.body.review]).sort();
 
-it('leaves Enter and Space on a focused button to that button, not the Confirm shortcut', async () => {
+// jsdom's :focus-visible does not follow how the focus came; a browser's matches only keyboard focus.
+const focusVisible = (visible: boolean) => {
+  const matches = HTMLElement.prototype.matches;
+  vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (this: HTMLElement, selector: string) {
+    return selector === ':focus-visible' ? visible && this === document.activeElement : matches.call(this, selector);
+  });
+};
+it('leaves Enter and Space on a button reached from the keyboard to that button', async () => {
   const first = await openReviewer();
   const none = within(first).getByRole('button', { name: /None/ });
   none.focus();
+  focusVisible(true); // as a browser reports a button reached with Tab
   for (const key of ['Enter', ' '])
     await act(async () => {
       fireEvent.keyDown(none, { key });
     });
   expect(reviews()).toEqual([]);
+});
+
+it('keeps Enter as Confirm when a click left focus on a button', async () => {
+  const first = await openReviewer();
+  const confirm = within(first).getByRole('button', { name: 'Confirm' });
+  focusVisible(false); // a browser keeps focus on a clicked button, but not :focus-visible
+  confirm.focus();
+  await act(async () => {
+    fireEvent.click(confirm);
+  });
+  await act(async () => {
+    fireEvent.keyDown(confirm, { key: 'Enter' });
+  });
+  expect(reviews()).toEqual([
+    ['a', 'accepted'],
+    ['b', 'accepted'],
+    ['c', 'accepted'],
+  ]);
 });
 
 it('plays the sighting first, and Confirm decides all its photos, moves on, and can be undone', async () => {

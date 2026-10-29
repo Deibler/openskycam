@@ -453,7 +453,10 @@ const steps = [
       const listed = json(status.text)?.cameras;
       if (![200, 503].includes(status.status) || !listed) return `${env.INGEST_URL} answers ${status.status || status.text}.`;
       // A camera added to CAMERAS after the deploy is refused until the Worker is deployed again.
-      const missing = (env.CAMERAS ?? '').split(',').filter(c => c && !listed.some(l => l.cam === c));
+      const missing = (env.CAMERAS ?? '')
+        .split(',')
+        .map(c => c.trim())
+        .filter(c => c && !listed.some(l => l.cam === c));
       return missing.length ? `The ingest Worker does not accept ${missing.join(', ')} yet.` : true;
     },
     async run() {

@@ -60,8 +60,10 @@ export function workflowSchedule(workflow: WorkflowDraft) {
   const data = workflow.nodes.find(node => node.data.kind === 'schedule')?.data;
   return data?.kind === 'schedule' ? data : undefined;
 }
-/** Latest HH:MM:SS a Day-of-each-run window may end for a set-time schedule. '' means none fits; null means no limit. */
+/** Latest HH:MM:SS a Day-of-each-run window may end for a schedule. '' means none fits; null means no limit. */
 export function latestUntil(schedule?: ScheduleStep) {
+  // New footage is checked every 15 minutes; the day's last check must see the window's last uploads.
+  if (schedule?.trigger === 'arrival') return `${clock(1440 - arrivalMinutes - uploadGraceMinutes)}:00`;
   if (schedule?.trigger !== 'time' || !/^\d\d:\d\d$/.test(schedule.at)) return null;
   const latest = minutesOf(schedule.at) - uploadGraceMinutes;
   return latest < 0 ? '' : `${clock(latest)}:00`;

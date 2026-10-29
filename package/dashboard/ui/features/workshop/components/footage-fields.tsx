@@ -50,7 +50,11 @@ export function FootageFields({
   // A schedule reruns this workflow, so its day must move with each run and a same-day window must upload first.
   const limit = latestUntil(schedule),
     endBy = data.day === 'run-day' ? limit : null;
-  const dayOptions = Object.entries(relativeDays).filter(([value]) => !(value === 'run-day' && limit === ''));
+  // New footage takes recordings as they upload, which is always the day of the run.
+  const dayOptions = Object.entries(relativeDays).filter(
+    ([value]) =>
+      !(value === 'run-day' && limit === '') && !(value === 'previous-day' && schedule?.trigger === 'arrival'),
+  );
   useEffect(() => {
     setFrom(data.from);
     setUntil(data.until);
@@ -332,7 +336,7 @@ export function FootageFields({
       {endBy !== null && data.until && fullTime(data.until) > endBy && (
         <p className="wk-error wk-hint" role="alert">
           {endBy
-            ? `End the window by ${endBy} UTC, or schedule later.`
+            ? `End the window by ${endBy} UTC${schedule?.trigger === 'time' ? ', or schedule later' : ''}.`
             : 'This schedule runs too early for Day of each run. Use Day before each run.'}
         </p>
       )}
