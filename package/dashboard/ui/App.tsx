@@ -1,7 +1,7 @@
 import { BrandIndicator, LoadingStatus } from './components/brand-indicator';
 import { BrandLogo } from './components/brand-logo';
 import { createPortal } from 'react-dom';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
   ChevronDown,
@@ -187,9 +187,11 @@ function ArchiveApp({ theme, setTheme }: { theme: string; setTheme: (theme: stri
   const isSaved = Boolean(segment && saved.has(`${cam}/${segment.start}`));
   const previousDay = adjacentRecordedDay(availability.days, route.day, -1);
   const nextDay = adjacentRecordedDay(availability.days, route.day, 1);
-  const uploadAge = overview?.health.newest_uploaded_at
-    ? Math.max(0, (now - Date.parse(overview.health.newest_uploaded_at)) / 1000)
-    : null;
+  // The server measured the age; only the time since its answer arrived is counted here, so a computer whose
+  // clock is off neither hides nor invents footage.
+  const received = useMemo(() => Date.now(), [overview]);
+  const uploadAge =
+    overview?.health.age_seconds != null ? overview.health.age_seconds + Math.max(0, now - received) / 1000 : null;
   const health = uploadAge === null ? 'Waiting for footage' : `Last upload ${formatAge(uploadAge)}`;
   const changeDate = (key: string) => {
     if (availability.days?.has(key)) {
@@ -272,8 +274,15 @@ function ArchiveApp({ theme, setTheme }: { theme: string; setTheme: (theme: stri
     setBrowserOpen(false);
     setDetailsOpen(true);
   };
+  // The same recording at the same moment, shown in the other time zone.
   const changeZone = (zone: Zone) =>
-    a.changeDay(segment ? dayKey(new Date(segment.start), zone) : route.day, zone, segment?.start ?? null);
+    a.changeDay(
+      segment ? dayKey(new Date(segment.start), zone) : route.day,
+      zone,
+      segment?.start ?? null,
+      false,
+      segment && a.playbackPosition.current.start === segment.start ? a.playbackPosition.current.offset : 0,
+    );
   function browseRecordings(exactTime = false) {
     browserReturnFocus.current = document.activeElement as HTMLElement;
     setFocusTime(exactTime);
@@ -291,7 +300,8 @@ function ArchiveApp({ theme, setTheme }: { theme: string; setTheme: (theme: stri
   }, [compact, fullscreen, route.view]);
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || shortcuts || route.view !== 'recordings') return;
+      // A control that handled the key, such as the minute picker's arrows, keeps it from the player.
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || shortcuts || route.view !== 'recordings') return;
       const target = e.target as HTMLElement;
       if (
         target.closest(

@@ -33,7 +33,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('renders one indicator during initial loading and one during subsequent buffering', () => {
+function renderViewer() {
   const segment: Segment = {
     start: '2026-09-22T19:30:00.000Z',
     duration_s: 60,
@@ -76,6 +76,10 @@ it('renders one indicator during initial loading and one during subsequent buffe
       />
     </TooltipProvider>,
   );
+}
+
+it('renders one indicator during initial loading and one during subsequent buffering', () => {
+  renderViewer();
   const media = screen.getByLabelText('Recorded camera footage');
   fireEvent.play(media);
   fireEvent.waiting(media);
@@ -91,4 +95,25 @@ it('renders one indicator during initial loading and one during subsequent buffe
   expect(screen.getByRole('status').querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(1);
   fireEvent.playing(media);
   expect(screen.queryByRole('status')).toBeNull();
+});
+
+it('tells a recording that cannot be downloaded from one the browser cannot decode', async () => {
+  for (const [response, message] of [
+    [new Response('', { status: 503 }), 'could not be loaded'],
+    [new Response('x', { status: 206, headers: { 'Content-Type': 'video/mp4' } }), 'cannot decode'],
+  ] as const) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response),
+    );
+    renderViewer();
+    const media = screen.getByLabelText('Recorded camera footage');
+    // Browsers report a failed HTTP load before metadata as MEDIA_ERR_SRC_NOT_SUPPORTED, like a codec they lack.
+    Object.defineProperty(media, 'error', { configurable: true, value: { code: 4 } });
+    await act(async () => {
+      fireEvent.error(media);
+    });
+    expect(screen.getByText(new RegExp(message))).toBeTruthy();
+    cleanup();
+  }
 });

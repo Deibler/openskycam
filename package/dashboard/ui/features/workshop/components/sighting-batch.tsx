@@ -7,6 +7,11 @@ import { classColor, modelClasses, sightingClass } from '../utils/sightingInfere
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable=true]');
+// Enter and Space on a focused button or link press it, never the reviewer's shortcut for the sighting.
+const pressing = (e: KeyboardEvent) =>
+  (e.key === 'Enter' || e.key === ' ') &&
+  e.target instanceof HTMLElement &&
+  !!e.target.closest('button, a[href], [role=button]');
 const time = (iso: string, seconds = false) =>
   new Date(iso).toLocaleTimeString([], {
     hour: 'numeric',
@@ -153,6 +158,7 @@ export function SightingBatch({
         e.ctrlKey ||
         e.metaKey ||
         typing(e.target) ||
+        pressing(e) ||
         document.querySelector('[role=dialog]')
       )
         return;

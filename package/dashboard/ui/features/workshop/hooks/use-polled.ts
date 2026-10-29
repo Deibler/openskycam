@@ -10,8 +10,10 @@ export function usePolled<T>(path: string | null, ms: number) {
     if (!path) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let skipped = false; // the last poll fell while the page was hidden
     async function load() {
-      if (!document.hidden) {
+      skipped = document.hidden;
+      if (!skipped) {
         try {
           const value = await apiRequest<T>(path!, 'GET', undefined, controller.signal);
           if (!controller.signal.aborted) {
@@ -24,10 +26,18 @@ export function usePolled<T>(path: string | null, ms: number) {
       }
       if (!controller.signal.aborted) timer = setTimeout(() => void load(), ms);
     }
+    // A page opened in a background tab reads when it is shown, not a whole interval later.
+    const shown = () => {
+      if (document.hidden || !skipped) return;
+      clearTimeout(timer);
+      void load();
+    };
+    document.addEventListener('visibilitychange', shown);
     void load();
     return () => {
       controller.abort();
       clearTimeout(timer);
+      document.removeEventListener('visibilitychange', shown);
     };
   }, [path, ms, tick]);
   return { data, error, refresh: () => setTick(value => value + 1) };

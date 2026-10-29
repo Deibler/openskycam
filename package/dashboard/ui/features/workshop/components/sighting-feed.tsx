@@ -28,6 +28,11 @@ const SPEEDS = [1, 2, 4];
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable=true]');
+// Enter and Space on a focused button or link press it, never the reviewer's shortcut for the sighting.
+const pressing = (e: KeyboardEvent) =>
+  (e.key === 'Enter' || e.key === ' ') &&
+  e.target instanceof HTMLElement &&
+  !!e.target.closest('button, a[href], [role=button]');
 const without = (marks: Record<string, PhotoMark>, frames: WorkshopRunImage[]) => {
   const next = { ...marks };
   for (const f of frames) delete next[f.id];
@@ -211,7 +216,14 @@ export function SightingFeed({
   useEffect(() => {
     if (editing !== null) return;
     function down(e: KeyboardEvent) {
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || typing(e.target) || document.querySelector('[role=dialog]'))
+      if (
+        e.defaultPrevented ||
+        e.altKey ||
+        e.ctrlKey ||
+        typing(e.target) ||
+        pressing(e) ||
+        document.querySelector('[role=dialog]')
+      )
         return;
       const key = e.key.toLowerCase();
       if (e.metaKey) {

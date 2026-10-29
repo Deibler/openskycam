@@ -26,7 +26,10 @@ function readRoute(): Route {
   const q = new URLSearchParams(search);
   const zone = q.get('tz') === 'UTC' ? 'UTC' : 'local';
   const today = startOfDay(new Date(), zone);
-  const date = parseDay(q.get('day') ?? '', zone) ?? today;
+  // A link names a moment; its day in this viewer's time zone can differ from the one in the link.
+  const at = q.get('at');
+  const moment = at && Number.isFinite(Date.parse(at)) ? startOfDay(new Date(at), zone) : null;
+  const date = moment ?? parseDay(q.get('day') ?? '', zone) ?? today;
   const bounded = new Date(
     Math.min(today.getTime(), Math.max(addDays(today, -RETENTION_DAYS, zone).getTime(), date.getTime())),
   );
@@ -35,7 +38,7 @@ function readRoute(): Route {
     day: dayKey(bounded, zone),
     zone,
     cam: q.get('cam'),
-    at: q.get('at'),
+    at,
     offset: Number.isFinite(offset) ? Math.max(0, Math.min(offset, 86400)) : 0,
     view:
       q.get('view') === 'workshop'
@@ -86,6 +89,12 @@ function writeRoute(route: Route, cam: string | null, at: string | null, push = 
     }
   }
 }
+/** The linked recording and position when the day has it, otherwise the day's newest recording from its start. */
+function linked(rows: Segment[], route: Route) {
+  const chosen = rows.find(s => s.start === route.at) ?? rows.at(-1);
+  const offset = chosen?.start === route.at ? Math.min(route.offset, Math.max(0, (chosen.duration_s ?? 60) - 0.01)) : 0;
+  return { chosen, offset };
+}
 export function useArchive() {
   const [route, setRoute] = useState(readRoute);
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -125,9 +134,7 @@ export function useArchive() {
         const rows = await fetchSegments(summary.cam, date, addDays(date, 1, route.zone), controller.signal);
         if (token !== generation.current) return;
         setSegments(rows);
-        const chosen = rows.find(s => s.start === route.at) ?? rows.at(-1);
-        const offset =
-          chosen?.start === route.at ? Math.min(route.offset, Math.max(0, (chosen.duration_s ?? 60) - 0.01)) : 0;
+        const { chosen, offset } = linked(rows, route);
         playbackPosition.current = { start: chosen?.start ?? '', offset };
         setSelection(chosen ? { segment: chosen, id: ++sequence.current, offset, play: route.play } : null);
         writeRoute(current.current.route, summary.cam, chosen?.start ?? null, false, offset);
@@ -167,25 +174,37 @@ export function useArchive() {
     writeRoute(next, next.cam ?? latest.overview?.cam ?? null, next.at, true);
     setRoute(next);
   }, []);
-  const changeDay = (value: string, zone = route.zone, at: string | null = null, play = false) => {
-    const max = dayKey(new Date(), zone);
-    const min = dayKey(addDays(new Date(), -RETENTION_DAYS, zone), zone);
-    if (parseDay(value, zone))
-      navigate({
-        day: value < min ? min : value > max ? max : value,
-        zone,
-        at,
-        play,
-        view: 'recordings',
-        revision: Date.now(),
-      });
-  };
-  const changeView = (view: Route['view']) => {
-    const next = { ...route, view };
-    writeRoute(next, cam, selection?.segment.start ?? null, true, playbackPosition.current.offset);
+  // Stable, so views that rebuild on a new callback (the Activity charts) keep their focus between refreshes.
+  const changeDay = useCallback(
+    (value: string, zone = current.current.route.zone, at: string | null = null, play = false, offset = 0) => {
+      const max = dayKey(new Date(), zone);
+      const min = dayKey(addDays(new Date(), -RETENTION_DAYS, zone), zone);
+      if (parseDay(value, zone))
+        navigate({
+          day: value < min ? min : value > max ? max : value,
+          zone,
+          at,
+          offset,
+          play,
+          view: 'recordings',
+          revision: Date.now(),
+        });
+    },
+    [navigate],
+  );
+  const changeView = useCallback((view: Route['view']) => {
+    const latest = current.current;
+    const next = { ...latest.route, view };
+    writeRoute(
+      next,
+      latest.overview?.cam ?? latest.route.cam,
+      latest.selection?.segment.start ?? null,
+      true,
+      playbackPosition.current.offset,
+    );
     setRoute(next);
     window.dispatchEvent(new Event('skyvision:navigate'));
-  };
+  }, []);
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
@@ -203,8 +222,9 @@ export function useArchive() {
       setSelection(previous => {
         const kept = previous && rows.find(s => s.start === previous.segment.start);
         if (kept && previous) return { ...previous, segment: kept };
-        const chosen = rows.at(-1);
-        return chosen ? { segment: chosen, id: ++sequence.current, offset: 0, play: false } : null;
+        // Retry after a failed first load still opens the linked moment.
+        const { chosen, offset } = linked(rows, latest.route);
+        return chosen ? { segment: chosen, id: ++sequence.current, offset, play: false } : null;
       });
     } catch (e) {
       if (token === generation.current) setError(e instanceof Error ? e : new Error('Refresh failed.'));

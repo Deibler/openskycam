@@ -910,14 +910,24 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(p, ref) {
             onError={() => {
               if (slot !== activeSlotRef.current) return;
               steps.cancel();
-              if (selected.current) {
-                setError(
-                  video.current?.error?.code === 2
-                    ? 'The recording could not be loaded. Check your connection and select it to retry.'
-                    : 'This browser cannot decode this HEVC recording. Download the original to play it locally.',
-                );
-                setBuffering(false);
-              }
+              if (!selected.current) return;
+              setBuffering(false);
+              const unreachable = 'The recording could not be loaded. Check your connection and select it to retry.';
+              const clip = clipOf(video.current);
+              if (video.current?.error?.code === 2 || !clip) return setError(unreachable);
+              // A failed download (a missing file, the footage store offline, a lapsed sign-in) is reported as an
+              // unsupported source too, so read one byte to tell it from a recording the browser cannot decode.
+              void fetch(clip, { headers: { Range: 'bytes=0-0' } })
+                .then(r => r.ok && (r.headers.get('Content-Type') ?? '').startsWith('video/'))
+                .catch(() => false)
+                .then(playable => {
+                  if (clipOf(video.current) !== clip) return;
+                  setError(
+                    playable
+                      ? 'This browser cannot decode this HEVC recording. Download the original to play it locally.'
+                      : unreachable,
+                  );
+                });
             }}
           />
         ))}
